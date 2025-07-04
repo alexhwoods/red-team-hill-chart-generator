@@ -130,13 +130,18 @@ class HillChartGenerator {
       const overlapThreshold = 35; // pixels
       const stackOffset = 40; // pixels to stack overlapping milestones vertically
 
-      // Find if there's an overlapping position and stack vertically
-      let stackLevel = 0;
-      for (const usedPos of usedPositions) {
-        if (Math.abs(adjustedX - usedPos.x) < overlapThreshold) {
-          stackLevel++;
-          // Stack vertically above the hill curve
-          adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
+      // If this is the dragged milestone, it stays on the hill curve
+      const isDraggedMilestone = this.draggedMilestone && this.draggedMilestone.id === milestone.id;
+      
+      if (!isDraggedMilestone) {
+        // Check if this milestone overlaps with any already positioned milestone
+        let stackLevel = 0;
+        for (const usedPos of usedPositions) {
+          if (Math.abs(adjustedX - usedPos.x) < overlapThreshold) {
+            stackLevel++;
+            // Stack vertically above the hill curve
+            adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
+          }
         }
       }
 
@@ -250,43 +255,11 @@ class HillChartGenerator {
         milestone.progress =
           (x - this.hillStartX) / (this.hillEndX - this.hillStartX);
         
-        // Check for overlapping milestones and calculate stacking position
-        const overlapThreshold = 35;
-        const stackOffset = 40;
-        let stackLevel = 0;
+        // The dragged milestone always stays on the hill curve
         let newY = this.getHillY(x);
         
-        // Check overlap with other milestones
-        for (const otherMilestone of this.milestones) {
-          if (otherMilestone.id !== milestone.id && 
-              Math.abs(x - otherMilestone.x) < overlapThreshold) {
-            stackLevel++;
-            newY = this.getHillY(x) - stackLevel * stackOffset;
-          }
-        }
-        
-        // Update circle position
-        const circle = milestoneGroup.querySelector("circle");
-        circle.setAttribute("cx", x);
-        circle.setAttribute("cy", newY);
-        
-        // Update text position based on which side of hill
-        const hillCenter = (this.hillStartX + this.hillEndX) / 2;
-        const isLeftSide = x < hillCenter;
-        const textOffset = 80;
-        const textX = isLeftSide ? x - textOffset : x + textOffset;
-        const textAnchor = isLeftSide ? "end" : "start";
-        
-        const textGroup = milestoneGroup.querySelector("g");
-        const textElements = textGroup.querySelectorAll("text");
-        textElements.forEach((textElement, index) => {
-          textElement.setAttribute("x", textX);
-          textElement.setAttribute("text-anchor", textAnchor);
-          const lineHeight = 14;
-          const totalLines = textElements.length;
-          const yOffset = index * lineHeight - ((totalLines - 1) * lineHeight) / 2;
-          textElement.setAttribute("y", newY + yOffset);
-        });
+        // Force re-render to handle stacking of other milestones
+        this.render();
       }
     });
 
