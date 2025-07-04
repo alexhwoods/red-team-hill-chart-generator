@@ -120,33 +120,48 @@ class HillChartGenerator {
     // Sort milestones by x position for consistent stacking
     const sortedMilestones = [...activeMilestones].sort((a, b) => a.x - b.x);
 
-    // Track positions to handle overlapping
-    const usedPositions = [];
+    // Handle stacking with priority for dragged milestone
+    const overlapThreshold = 35; // pixels
+    const stackOffset = 40; // pixels to stack overlapping milestones vertically
+    const finalPositions = [];
 
+    // First: Position the dragged milestone on the hill curve if it exists
+    if (this.draggedMilestone) {
+      const draggedMilestone = sortedMilestones.find(m => m.id === this.draggedMilestone.id);
+      if (draggedMilestone) {
+        finalPositions.push({ 
+          milestone: draggedMilestone, 
+          x: draggedMilestone.x, 
+          y: this.getHillY(draggedMilestone.x) 
+        });
+      }
+    }
+
+    // Second: Position all other milestones, stacking them if they overlap
     sortedMilestones.forEach((milestone) => {
-      // Handle overlapping by stacking vertically
-      let adjustedX = milestone.x;
-      let adjustedY = this.getHillY(adjustedX);
-      const overlapThreshold = 35; // pixels
-      const stackOffset = 40; // pixels to stack overlapping milestones vertically
-
-      // If this is the dragged milestone, it stays on the hill curve
       const isDraggedMilestone = this.draggedMilestone && this.draggedMilestone.id === milestone.id;
       
       if (!isDraggedMilestone) {
+        let adjustedX = milestone.x;
+        let adjustedY = this.getHillY(adjustedX);
+        
         // Check if this milestone overlaps with any already positioned milestone
         let stackLevel = 0;
-        for (const usedPos of usedPositions) {
-          if (Math.abs(adjustedX - usedPos.x) < overlapThreshold) {
+        for (const pos of finalPositions) {
+          if (Math.abs(adjustedX - pos.x) < overlapThreshold) {
             stackLevel++;
-            // Stack vertically above the hill curve
             adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
           }
         }
+        finalPositions.push({ milestone, x: adjustedX, y: adjustedY });
       }
+    });
 
-      // Store this position
-      usedPositions.push({ x: adjustedX, y: adjustedY });
+    // Render all milestones using their final positions
+    finalPositions.forEach((pos) => {
+      const milestone = pos.milestone;
+      const adjustedX = pos.x;
+      const adjustedY = pos.y;
 
       const milestoneGroup = document.createElementNS(
         "http://www.w3.org/2000/svg",
