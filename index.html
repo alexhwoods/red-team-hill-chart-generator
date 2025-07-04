@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>State Hill Chart Generator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⭐ STATE HILL CHART GENERATOR ⭐</h1>
+            <p>🚩 Comrades! Visualize progress in achieving five-year plan goals! 🚩<br><em>"Productivity Through Scientific Socialist Planning!"</em></p>
+        </header>
+        
+        <div class="controls">
+            <input type="text" id="milestoneInput" placeholder="Enter production goal">
+            <button id="addMilestone">⚡ Add Goal ⚡</button>
+            <button id="exportBtn">📊 Export Data 📊</button>
+            <button id="clearBtn">🧹 Clear All 🧹</button>
+        </div>
+        
+        <div class="hill-chart-container">
+            <svg id="hillChart" width="1000" height="400">
+                <defs>
+                    <linearGradient id="hillGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#fffacd;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#f0e68c;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                
+                <rect class="background" width="1000" height="400" fill="url(#hillGradient)"/>
+                
+                <g class="hill-labels">
+                    <text x="300" y="350" text-anchor="middle" class="phase-label">Problem Analysis</text>
+                    <text x="700" y="350" text-anchor="middle" class="phase-label">Executing Plan</text>
+                </g>
+                
+                <g class="hill-curve"></g>
+                <g class="milestone-points"></g>
+            </svg>
+        </div>
+        
+        <div class="milestone-list">
+            <h3>🏭 FIVE-YEAR PLAN PRODUCTION GOALS 🏭</h3>
+            <ul id="milestoneList"></ul>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

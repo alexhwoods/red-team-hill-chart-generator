@@ -1,0 +1,374 @@
+class HillChartGenerator {
+  constructor() {
+    this.svg = document.getElementById("hillChart");
+    this.milestoneInput = document.getElementById("milestoneInput");
+    this.addMilestoneBtn = document.getElementById("addMilestone");
+    this.exportBtn = document.getElementById("exportBtn");
+    this.clearBtn = document.getElementById("clearBtn");
+    this.milestoneList = document.getElementById("milestoneList");
+
+    this.milestones = [];
+    this.draggedMilestone = null;
+    this.chartWidth = 1000;
+    this.chartHeight = 400;
+    this.hillStartX = 200;
+    this.hillEndX = 800;
+    this.hillTopY = 80;
+    this.hillBottomY = 280;
+
+    this.init();
+  }
+
+  init() {
+    this.drawHillCurve();
+    this.bindEvents();
+    this.loadMilestones();
+  }
+
+  drawHillCurve() {
+    const hillCurve = this.svg.querySelector(".hill-curve");
+    const path = this.generateHillPath();
+    hillCurve.innerHTML = `<path d="${path}" class="hill-path"/>`;
+  }
+
+  generateHillPath() {
+    // Generate path by sampling points along the normal curve
+    const points = [];
+    const numPoints = 50;
+
+    for (let i = 0; i <= numPoints; i++) {
+      const x =
+        this.hillStartX + (this.hillEndX - this.hillStartX) * (i / numPoints);
+      const y = this.getHillY(x);
+      points.push({ x, y });
+    }
+
+    // Build SVG path using the sampled points
+    let path = `M ${points[0].x} ${points[0].y}`;
+
+    for (let i = 1; i < points.length; i++) {
+      path += ` L ${points[i].x} ${points[i].y}`;
+    }
+
+    return path;
+  }
+
+  bindEvents() {
+    this.addMilestoneBtn.addEventListener("click", () => this.addMilestone());
+    this.milestoneInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") this.addMilestone();
+    });
+    this.exportBtn.addEventListener("click", () => this.exportData());
+    this.clearBtn.addEventListener("click", () => this.clearAll());
+  }
+
+  addMilestone() {
+    const milestoneName = this.milestoneInput.value.trim();
+    if (!milestoneName) return;
+
+    const milestone = {
+      id: Date.now(),
+      name: milestoneName,
+      x: this.hillStartX + (this.hillEndX - this.hillStartX) * 0.1,
+      progress: 0.1,
+    };
+
+    this.milestones.push(milestone);
+    this.milestoneInput.value = "";
+    this.render();
+    this.saveMilestones();
+  }
+
+  removeMilestone(milestoneId) {
+    this.milestones = this.milestones.filter(
+      (milestone) => milestone.id !== milestoneId
+    );
+    this.render();
+    this.saveMilestones();
+  }
+
+  getHillY(x) {
+    const totalWidth = this.hillEndX - this.hillStartX;
+    const normalizedX = (x - this.hillStartX) / totalWidth;
+
+    // Calculate Y position using normal distribution formula
+    // Center the curve at x = 0.5, with standard deviation that fits well
+    const mean = 0.5;
+    const stdDev = 0.2;
+    const amplitude = this.hillBottomY - this.hillTopY;
+
+    // Normal distribution formula: e^(-0.5 * ((x - mean) / stdDev)^2)
+    const exponent = -0.5 * Math.pow((normalizedX - mean) / stdDev, 2);
+    const normalValue = Math.exp(exponent);
+
+    const y = this.hillBottomY - amplitude * normalValue;
+
+    return y;
+  }
+
+  render() {
+    this.renderMilestonePoints();
+    this.renderMilestoneList();
+  }
+
+  renderMilestonePoints() {
+    const milestonePoints = this.svg.querySelector(".milestone-points");
+    milestonePoints.innerHTML = "";
+
+    const activeMilestones = this.milestones;
+    
+    // Sort milestones by x position for consistent stacking
+    const sortedMilestones = [...activeMilestones].sort((a, b) => a.x - b.x);
+
+    // Track positions to handle overlapping
+    const usedPositions = [];
+
+    sortedMilestones.forEach((milestone) => {
+      // Handle overlapping by adjusting X position slightly while keeping on curve
+      let adjustedX = milestone.x;
+      const overlapThreshold = 35; // pixels
+      const spreadOffset = 15; // pixels to spread overlapping milestones
+
+      // Find if there's an overlapping position and adjust horizontally
+      let spreadLevel = 0;
+      let foundOverlap = true;
+
+      while (foundOverlap) {
+        foundOverlap = false;
+
+        for (const usedPos of usedPositions) {
+          if (Math.abs(adjustedX - usedPos.x) < overlapThreshold) {
+            foundOverlap = true;
+            spreadLevel++;
+            // Alternate spreading left and right
+            const direction = spreadLevel % 2 === 0 ? 1 : -1;
+            adjustedX =
+              milestone.x +
+              direction * Math.ceil(spreadLevel / 2) * spreadOffset;
+
+            // Keep within hill bounds
+            adjustedX = Math.max(
+              this.hillStartX,
+              Math.min(this.hillEndX, adjustedX)
+            );
+            break;
+          }
+        }
+      }
+
+      // Calculate Y position based on adjusted X (stay on curve)
+      const adjustedY = this.getHillY(adjustedX);
+
+      // Store this position
+      usedPositions.push({ x: adjustedX, y: adjustedY });
+
+      const milestoneGroup = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "g"
+      );
+      milestoneGroup.classList.add("milestone-point");
+      milestoneGroup.setAttribute("data-milestone-id", milestone.id);
+
+      const circle = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "circle"
+      );
+      circle.setAttribute("cx", adjustedX);
+      circle.setAttribute("cy", adjustedY);
+      circle.setAttribute("r", 15);
+
+      // Create text with wrapping support
+      const textGroup = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "g"
+      );
+
+      // Always position text to the right with consistent distance and left alignment
+      const textOffset = 80;
+      const textX = adjustedX + textOffset;
+      const textAnchor = "start"; // Always left-aligned
+
+      // Check if text would go outside bounds and wrap if needed
+      this.createWrappedText(
+        textGroup,
+        milestone.name,
+        textX,
+        adjustedY,
+        textAnchor,
+        false
+      );
+
+      milestoneGroup.appendChild(circle);
+      milestoneGroup.appendChild(textGroup);
+      milestonePoints.appendChild(milestoneGroup);
+
+      this.bindMilestoneEvents(milestoneGroup, milestone, adjustedY);
+    });
+  }
+
+  createWrappedText(textGroup, text, x, y, textAnchor, isLeftSide) {
+    const maxWidth = 150; // Maximum width for text before wrapping
+    const lineHeight = 14; // Height between lines
+    const words = text.split(" ");
+
+    let lines = [];
+    let currentLine = "";
+
+    // Simple word wrapping
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+      // Estimate if line would be too long (rough approximation)
+      if (testLine.length * 7 > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+
+    // Check if text would go outside SVG bounds
+    const svgBounds = isLeftSide ? x - maxWidth : x + maxWidth;
+    const isOutsideBounds = isLeftSide
+      ? svgBounds < 0
+      : svgBounds > this.chartWidth;
+
+    console.log("isOutsideBounds", isOutsideBounds);
+
+    // If outside bounds and more than one word, force wrap to fit
+    if (isOutsideBounds && words.length > 1) {
+      lines = [];
+      for (const word of words) {
+        lines.push(word);
+      }
+    }
+
+    // Create SVG text elements for each line
+    lines.forEach((line, index) => {
+      const textElement = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "text"
+      );
+      textElement.setAttribute("x", x);
+      textElement.setAttribute(
+        "y",
+        y + index * lineHeight - ((lines.length - 1) * lineHeight) / 2
+      );
+      textElement.setAttribute("text-anchor", textAnchor);
+      textElement.setAttribute("class", "milestone-text");
+      textElement.textContent = line;
+      textGroup.appendChild(textElement);
+    });
+  }
+
+  bindMilestoneEvents(milestoneGroup, milestone, adjustedY) {
+    let isDragging = false;
+
+    milestoneGroup.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      this.draggedMilestone = milestone;
+      milestoneGroup.classList.add("dragging");
+      e.preventDefault();
+    });
+
+    this.svg.addEventListener("mousemove", (e) => {
+      if (!isDragging || this.draggedMilestone !== milestone) return;
+
+      const rect = this.svg.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+
+      if (x >= this.hillStartX && x <= this.hillEndX) {
+        milestone.x = x;
+        milestone.progress =
+          (x - this.hillStartX) / (this.hillEndX - this.hillStartX);
+        this.render();
+      }
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (isDragging && this.draggedMilestone === milestone) {
+        isDragging = false;
+        this.draggedMilestone = null;
+        milestoneGroup.classList.remove("dragging");
+        this.saveMilestones();
+      }
+    });
+  }
+
+  renderMilestoneList() {
+    this.milestoneList.innerHTML = "";
+
+    const activeMilestones = this.milestones;
+
+    activeMilestones.forEach((milestone) => {
+      const li = document.createElement("li");
+      li.classList.add("milestone-item");
+
+      const progress = Math.round(milestone.progress * 100);
+      const phase =
+        milestone.progress < 0.5 ? "Problem Analysis" : "Executing Plan";
+
+      li.innerHTML = `
+                <div>
+                    <span class="milestone-name">${milestone.name}</span>
+                    <span class="milestone-position">${progress}% - ${phase}</span>
+                </div>
+                <button class="remove-btn" onclick="hillChart.removeMilestone(${milestone.id})">×</button>
+            `;
+
+      this.milestoneList.appendChild(li);
+    });
+  }
+
+
+  exportData() {
+    const data = {
+      milestones: this.milestones.map((milestone) => ({
+        name: milestone.name,
+        progress: Math.round(milestone.progress * 100),
+        phase: milestone.progress < 0.5 ? "Problem Analysis" : "Executing Plan",
+      })),
+      exportDate: new Date().toISOString(),
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hill-chart-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  clearAll() {
+    if (
+      confirm(
+        "Comrade! Are you sure you want to clear all five-year plan production goals?"
+      )
+    ) {
+      this.milestones = [];
+      this.render();
+      this.saveMilestones();
+    }
+  }
+
+  saveMilestones() {
+    localStorage.setItem(
+      "hillChartMilestones",
+      JSON.stringify(this.milestones)
+    );
+  }
+
+  loadMilestones() {
+    const saved = localStorage.getItem("hillChartMilestones");
+    if (saved) {
+      this.milestones = JSON.parse(saved);
+      this.render();
+    }
+  }
+}
+
+const hillChart = new HillChartGenerator();

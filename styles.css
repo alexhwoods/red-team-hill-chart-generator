@@ -1,0 +1,255 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    background: linear-gradient(135deg, #cc0000 0%, #8b0000 50%, #cc0000 100%);
+    min-height: 100vh;
+    padding: 20px;
+    background-image: 
+        radial-gradient(circle at 25% 25%, #ffff00 2px, transparent 2px),
+        radial-gradient(circle at 75% 75%, #ffff00 1px, transparent 1px);
+    background-size: 50px 50px;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+header {
+    background: linear-gradient(135deg, #cc0000 0%, #8b0000 50%, #cc0000 100%);
+    color: #ffff00;
+    padding: 30px;
+    text-align: center;
+    border: 5px solid #ffff00;
+    box-shadow: inset 0 0 20px rgba(255, 255, 0, 0.3);
+}
+
+header h1 {
+    font-size: 2.2em;
+    margin-bottom: 10px;
+    font-weight: bold;
+    text-shadow: 3px 3px 0px #8b0000;
+    letter-spacing: 2px;
+}
+
+header p {
+    font-size: 1.1em;
+    opacity: 0.95;
+    text-shadow: 2px 2px 0px #8b0000;
+    font-weight: bold;
+}
+
+.controls {
+    padding: 20px 30px;
+    background: linear-gradient(90deg, #ffff00 0%, #ffd700 100%);
+    border-bottom: 3px solid #cc0000;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    box-shadow: inset 0 0 10px rgba(204, 0, 0, 0.3);
+}
+
+#milestoneInput {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 15px;
+    border: 3px solid #cc0000;
+    border-radius: 6px;
+    font-size: 16px;
+    font-family: 'Comic Sans MS', cursive;
+    background: #fff;
+    transition: border-color 0.3s;
+}
+
+#milestoneInput:focus {
+    outline: none;
+    border-color: #8b0000;
+    box-shadow: 0 0 10px rgba(204, 0, 0, 0.5);
+}
+
+button {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #cc0000 0%, #8b0000 100%);
+    color: #ffff00;
+    border: 2px solid #ffff00;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Comic Sans MS', cursive;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-shadow: 1px 1px 0px #8b0000;
+}
+
+button:hover {
+    background: linear-gradient(135deg, #8b0000 0%, #cc0000 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+#clearBtn {
+    background: linear-gradient(135deg, #8b0000 0%, #4d0000 100%);
+}
+
+#clearBtn:hover {
+    background: linear-gradient(135deg, #4d0000 0%, #8b0000 100%);
+}
+
+.hill-chart-container {
+    padding: 30px;
+    background: linear-gradient(135deg, #fffacd 0%, #f0e68c 100%);
+    display: flex;
+    justify-content: center;
+    border: 3px solid #cc0000;
+    box-shadow: inset 0 0 20px rgba(204, 0, 0, 0.1);
+    position: relative;
+}
+
+
+#hillChart {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 2px solid #8b0000;
+}
+
+.hill-path {
+    fill: none;
+    stroke: #cc0000;
+    stroke-width: 4;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.phase-label {
+    font-size: 14px;
+    font-weight: bold;
+    fill: #8b0000;
+    font-family: 'Comic Sans MS', cursive;
+}
+
+.milestone-point {
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.milestone-point:hover {
+    opacity: 0.8;
+}
+
+.milestone-point circle {
+    fill: #cc0000;
+    stroke: #ffff00;
+    stroke-width: 3;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.milestone-point text,
+.milestone-text {
+    font-size: 11px;
+    font-weight: bold;
+    fill: #8b0000;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    font-family: 'Comic Sans MS', cursive;
+    stroke: #ffff00;
+    stroke-width: 0.5px;
+    paint-order: stroke fill;
+}
+
+.milestone-list {
+    padding: 30px;
+    background: linear-gradient(135deg, #ffff00 0%, #ffd700 100%);
+    border: 3px solid #cc0000;
+}
+
+.milestone-list h3 {
+    margin-bottom: 15px;
+    color: #8b0000;
+    font-size: 1.2em;
+    font-weight: bold;
+    text-shadow: 2px 2px 0px #ffd700;
+    text-align: center;
+}
+
+#milestoneList {
+    list-style: none;
+}
+
+.milestone-item {
+    background: linear-gradient(90deg, #fff 0%, #fffacd 100%);
+    margin-bottom: 8px;
+    padding: 12px 15px;
+    border-radius: 6px;
+    border-left: 4px solid #cc0000;
+    border: 2px solid #8b0000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.milestone-item .milestone-name {
+    font-weight: bold;
+    color: #8b0000;
+    font-family: 'Comic Sans MS', cursive;
+}
+
+.milestone-item .milestone-position {
+    font-size: 12px;
+    color: #8b0000;
+    background: #ffff00;
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid #cc0000;
+    font-weight: bold;
+}
+
+.milestone-item .remove-btn {
+    background: linear-gradient(135deg, #8b0000 0%, #4d0000 100%);
+    color: #ffff00;
+    border: 1px solid #ffff00;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.milestone-item .remove-btn:hover {
+    background: linear-gradient(135deg, #4d0000 0%, #8b0000 100%);
+    transform: scale(1.1);
+}
+
+.dragging {
+    opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    #milestoneInput {
+        margin-bottom: 10px;
+    }
+    
+    button {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+    
+    #hillChart {
+        width: 100%;
+        height: 300px;
+    }
+}
