@@ -9,6 +9,7 @@ class HillChartGenerator {
 
     this.milestones = [];
     this.draggedMilestone = null;
+    this.lastDraggedMilestone = null;
     this.chartWidth = 1200;
     this.chartHeight = 500;
     this.hillStartX = 250;
@@ -125,23 +126,28 @@ class HillChartGenerator {
     const stackOffset = 40; // pixels to stack overlapping milestones vertically
     const finalPositions = [];
 
-    // First: Position the dragged milestone on the hill curve if it exists
+    // First: Position the dragged milestone or last dragged milestone on the hill curve
+    let priorityMilestone = null;
     if (this.draggedMilestone) {
-      const draggedMilestone = sortedMilestones.find(m => m.id === this.draggedMilestone.id);
-      if (draggedMilestone) {
-        finalPositions.push({ 
-          milestone: draggedMilestone, 
-          x: draggedMilestone.x, 
-          y: this.getHillY(draggedMilestone.x) 
-        });
-      }
+      priorityMilestone = sortedMilestones.find(m => m.id === this.draggedMilestone.id);
+    } else if (this.lastDraggedMilestone) {
+      priorityMilestone = sortedMilestones.find(m => m.id === this.lastDraggedMilestone.id);
+    }
+    
+    if (priorityMilestone) {
+      finalPositions.push({ 
+        milestone: priorityMilestone, 
+        x: priorityMilestone.x, 
+        y: this.getHillY(priorityMilestone.x) 
+      });
     }
 
     // Second: Position all other milestones, stacking them if they overlap
     sortedMilestones.forEach((milestone) => {
       const isDraggedMilestone = this.draggedMilestone && this.draggedMilestone.id === milestone.id;
+      const isLastDraggedMilestone = this.lastDraggedMilestone && this.lastDraggedMilestone.id === milestone.id;
       
-      if (!isDraggedMilestone) {
+      if (!isDraggedMilestone && !isLastDraggedMilestone) {
         let adjustedX = milestone.x;
         let adjustedY = this.getHillY(adjustedX);
         
@@ -153,6 +159,7 @@ class HillChartGenerator {
             adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
           }
         }
+        
         finalPositions.push({ milestone, x: adjustedX, y: adjustedY });
       }
     });
@@ -281,6 +288,7 @@ class HillChartGenerator {
     document.addEventListener("mouseup", () => {
       if (isDragging && this.draggedMilestone === milestone) {
         isDragging = false;
+        this.lastDraggedMilestone = this.draggedMilestone;
         this.draggedMilestone = null;
         milestoneGroup.classList.remove("dragging");
         // Full render when drag is complete to handle stacking
