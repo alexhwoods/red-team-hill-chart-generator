@@ -124,40 +124,21 @@ class HillChartGenerator {
     const usedPositions = [];
 
     sortedMilestones.forEach((milestone) => {
-      // Handle overlapping by adjusting X position slightly while keeping on curve
+      // Handle overlapping by stacking vertically
       let adjustedX = milestone.x;
+      let adjustedY = this.getHillY(adjustedX);
       const overlapThreshold = 35; // pixels
-      const spreadOffset = 15; // pixels to spread overlapping milestones
+      const stackOffset = 40; // pixels to stack overlapping milestones vertically
 
-      // Find if there's an overlapping position and adjust horizontally
-      let spreadLevel = 0;
-      let foundOverlap = true;
-
-      while (foundOverlap) {
-        foundOverlap = false;
-
-        for (const usedPos of usedPositions) {
-          if (Math.abs(adjustedX - usedPos.x) < overlapThreshold) {
-            foundOverlap = true;
-            spreadLevel++;
-            // Alternate spreading left and right
-            const direction = spreadLevel % 2 === 0 ? 1 : -1;
-            adjustedX =
-              milestone.x +
-              direction * Math.ceil(spreadLevel / 2) * spreadOffset;
-
-            // Keep within hill bounds
-            adjustedX = Math.max(
-              this.hillStartX,
-              Math.min(this.hillEndX, adjustedX)
-            );
-            break;
-          }
+      // Find if there's an overlapping position and stack vertically
+      let stackLevel = 0;
+      for (const usedPos of usedPositions) {
+        if (Math.abs(adjustedX - usedPos.x) < overlapThreshold) {
+          stackLevel++;
+          // Stack vertically above the hill curve
+          adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
         }
       }
-
-      // Calculate Y position based on adjusted X (stay on curve)
-      const adjustedY = this.getHillY(adjustedX);
 
       // Store this position
       usedPositions.push({ x: adjustedX, y: adjustedY });
@@ -282,7 +263,37 @@ class HillChartGenerator {
         milestone.x = x;
         milestone.progress =
           (x - this.hillStartX) / (this.hillEndX - this.hillStartX);
-        this.render();
+        
+        // Check for overlapping milestones and calculate stacking position
+        const overlapThreshold = 35;
+        const stackOffset = 40;
+        let stackLevel = 0;
+        let newY = this.getHillY(x);
+        
+        // Check overlap with other milestones
+        for (const otherMilestone of this.milestones) {
+          if (otherMilestone.id !== milestone.id && 
+              Math.abs(x - otherMilestone.x) < overlapThreshold) {
+            stackLevel++;
+            newY = this.getHillY(x) - stackLevel * stackOffset;
+          }
+        }
+        
+        // Update circle position
+        const circle = milestoneGroup.querySelector("circle");
+        circle.setAttribute("cx", x);
+        circle.setAttribute("cy", newY);
+        
+        // Update text position with consistent offset
+        const textGroup = milestoneGroup.querySelector("g");
+        const textElements = textGroup.querySelectorAll("text");
+        textElements.forEach((textElement, index) => {
+          textElement.setAttribute("x", x + 80);
+          const lineHeight = 14;
+          const totalLines = textElements.length;
+          const yOffset = index * lineHeight - ((totalLines - 1) * lineHeight) / 2;
+          textElement.setAttribute("y", newY + yOffset);
+        });
       }
     });
 
@@ -291,6 +302,8 @@ class HillChartGenerator {
         isDragging = false;
         this.draggedMilestone = null;
         milestoneGroup.classList.remove("dragging");
+        // Full render when drag is complete to handle stacking
+        this.render();
         this.saveMilestones();
       }
     });
