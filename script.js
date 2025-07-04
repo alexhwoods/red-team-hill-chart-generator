@@ -9,12 +9,12 @@ class HillChartGenerator {
 
     this.milestones = [];
     this.draggedMilestone = null;
-    this.chartWidth = 1000;
-    this.chartHeight = 400;
-    this.hillStartX = 200;
-    this.hillEndX = 800;
-    this.hillTopY = 80;
-    this.hillBottomY = 280;
+    this.chartWidth = 1200;
+    this.chartHeight = 500;
+    this.hillStartX = 150;
+    this.hillEndX = 1050;
+    this.hillTopY = 60;
+    this.hillBottomY = 350;
 
     this.init();
   }
@@ -176,7 +176,7 @@ class HillChartGenerator {
       );
       circle.setAttribute("cx", adjustedX);
       circle.setAttribute("cy", adjustedY);
-      circle.setAttribute("r", 15);
+      circle.setAttribute("r", 10);
 
       // Create text with wrapping support
       const textGroup = document.createElementNS(
