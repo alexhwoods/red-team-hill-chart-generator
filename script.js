@@ -164,19 +164,20 @@ class HillChartGenerator {
         "g"
       );
 
-      // Always position text to the right with consistent distance and left alignment
+      // Position text on left side if milestone is on left side of hill
+      const hillCenter = (this.hillStartX + this.hillEndX) / 2;
+      const isLeftSide = adjustedX < hillCenter;
       const textOffset = 80;
-      const textX = adjustedX + textOffset;
-      const textAnchor = "start"; // Always left-aligned
+      const textX = isLeftSide ? adjustedX - textOffset : adjustedX + textOffset;
+      const textAnchor = isLeftSide ? "end" : "start";
 
-      // Check if text would go outside bounds and wrap if needed
       this.createWrappedText(
         textGroup,
         milestone.name,
         textX,
         adjustedY,
         textAnchor,
-        false
+        isLeftSide
       );
 
       milestoneGroup.appendChild(circle);
@@ -269,11 +270,18 @@ class HillChartGenerator {
         circle.setAttribute("cx", x);
         circle.setAttribute("cy", newY);
         
-        // Update text position with consistent offset
+        // Update text position based on which side of hill
+        const hillCenter = (this.hillStartX + this.hillEndX) / 2;
+        const isLeftSide = x < hillCenter;
+        const textOffset = 80;
+        const textX = isLeftSide ? x - textOffset : x + textOffset;
+        const textAnchor = isLeftSide ? "end" : "start";
+        
         const textGroup = milestoneGroup.querySelector("g");
         const textElements = textGroup.querySelectorAll("text");
         textElements.forEach((textElement, index) => {
-          textElement.setAttribute("x", x + 80);
+          textElement.setAttribute("x", textX);
+          textElement.setAttribute("text-anchor", textAnchor);
           const lineHeight = 14;
           const totalLines = textElements.length;
           const yOffset = index * lineHeight - ((totalLines - 1) * lineHeight) / 2;
