@@ -11,8 +11,8 @@ class HillChartGenerator {
     this.draggedMilestone = null;
     this.chartWidth = 1200;
     this.chartHeight = 500;
-    this.hillStartX = 150;
-    this.hillEndX = 1050;
+    this.hillStartX = 250;
+    this.hillEndX = 950;
     this.hillTopY = 60;
     this.hillBottomY = 350;
 
@@ -92,9 +92,9 @@ class HillChartGenerator {
     const normalizedX = (x - this.hillStartX) / totalWidth;
 
     // Calculate Y position using normal distribution formula
-    // Center the curve at x = 0.5, with standard deviation that fits well
+    // Center the curve at x = 0.5, with smaller standard deviation for steeper curve
     const mean = 0.5;
-    const stdDev = 0.2;
+    const stdDev = 0.15;
     const amplitude = this.hillBottomY - this.hillTopY;
 
     // Normal distribution formula: e^(-0.5 * ((x - mean) / stdDev)^2)
