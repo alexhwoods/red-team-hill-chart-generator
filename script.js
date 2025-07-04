@@ -209,21 +209,6 @@ class HillChartGenerator {
     }
     if (currentLine) lines.push(currentLine);
 
-    // Check if text would go outside SVG bounds
-    const svgBounds = isLeftSide ? x - maxWidth : x + maxWidth;
-    const isOutsideBounds = isLeftSide
-      ? svgBounds < 0
-      : svgBounds > this.chartWidth;
-
-    console.log("isOutsideBounds", isOutsideBounds);
-
-    // If outside bounds and more than one word, force wrap to fit
-    if (isOutsideBounds && words.length > 1) {
-      lines = [];
-      for (const word of words) {
-        lines.push(word);
-      }
-    }
 
     // Create SVG text elements for each line
     lines.forEach((line, index) => {
