@@ -318,131 +318,125 @@ class HillChartGenerator {
 
 
   downloadImage() {
-    // Create a high-resolution canvas
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
     const scale = 2; // High resolution
     
+    // Set canvas size to match SVG
     canvas.width = this.chartWidth * scale;
     canvas.height = this.chartHeight * scale;
     ctx.scale(scale, scale);
     
-    // Fill background with gradient
+    // Get the SVG element's background gradient
     const gradient = ctx.createLinearGradient(0, 0, 0, this.chartHeight);
     gradient.addColorStop(0, '#fffacd');
     gradient.addColorStop(1, '#f0e68c');
+    
+    // Fill background
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, this.chartWidth, this.chartHeight);
     
     // Draw hill curve
-    this.drawHillCurveOnCanvas(ctx);
+    ctx.beginPath();
+    ctx.strokeStyle = '#cc0000';
+    ctx.lineWidth = 2;
+    
+    // Generate the same hill path as SVG
+    const points = [];
+    const numPoints = 50;
+    for (let i = 0; i <= numPoints; i++) {
+      const x = this.hillStartX + (this.hillEndX - this.hillStartX) * (i / numPoints);
+      const y = this.getHillY(x);
+      points.push({ x, y });
+    }
+    
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.stroke();
     
     // Draw phase labels
-    this.drawPhaseLabelsOnCanvas(ctx);
+    ctx.fillStyle = '#8b0000';
+    ctx.font = 'bold 14px Comic Sans MS, cursive';
+    ctx.textAlign = 'center';
+    ctx.fillText('Problem Analysis', 475, 550);
+    ctx.fillText('Executing Plan', 725, 550);
     
-    // Draw milestones
-    this.drawMilestonesOnCanvas(ctx);
+    // Draw milestones by reading their exact DOM positions
+    const milestoneElements = this.svg.querySelectorAll('.milestone-point');
+    milestoneElements.forEach(element => {
+      const circle = element.querySelector('circle');
+      const textGroup = element.querySelector('g');
+      
+      if (circle) {
+        const cx = parseFloat(circle.getAttribute('cx'));
+        const cy = parseFloat(circle.getAttribute('cy'));
+        const r = parseFloat(circle.getAttribute('r'));
+        
+        // Draw circle
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+        ctx.fillStyle = '#cc0000';
+        ctx.fill();
+        ctx.strokeStyle = '#ffff00';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // Draw text using exact DOM positions
+        if (textGroup) {
+          const textElements = textGroup.querySelectorAll('text');
+          textElements.forEach(textEl => {
+            const x = parseFloat(textEl.getAttribute('x'));
+            const y = parseFloat(textEl.getAttribute('y'));
+            const text = textEl.textContent;
+            const textAnchor = textEl.getAttribute('text-anchor');
+            
+            ctx.fillStyle = '#8b0000';
+            ctx.strokeStyle = '#ffff00';
+            ctx.lineWidth = 0.5;
+            ctx.font = 'bold 11px Comic Sans MS, cursive';
+            
+            // Set text alignment based on text-anchor
+            if (textAnchor === 'end') {
+              ctx.textAlign = 'right';
+            } else if (textAnchor === 'start') {
+              ctx.textAlign = 'left';
+            } else {
+              ctx.textAlign = 'center';
+            }
+            
+            // Draw text with stroke and fill
+            ctx.strokeText(text, x, y);
+            ctx.fillText(text, x, y);
+          });
+        }
+      }
+    });
     
-    // Download the image
+    // Convert canvas to blob and download
     canvas.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
       a.download = `hill-chart-${Date.now()}.png`;
       a.click();
       URL.revokeObjectURL(url);
-    }, "image/png");
+    }, 'image/png');
   }
 
-  drawHillCurveOnCanvas(ctx) {
-    ctx.strokeStyle = '#cc0000';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    
-    const numPoints = 100;
-    for (let i = 0; i <= numPoints; i++) {
-      const x = this.hillStartX + (this.hillEndX - this.hillStartX) * (i / numPoints);
-      const y = this.getHillY(x);
-      
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    }
-    
-    ctx.stroke();
+  downloadSVG() {
+    // Fallback: download the raw SVG file
+    const svgData = new XMLSerializer().serializeToString(this.svg);
+    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hill-chart-${Date.now()}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
-  drawPhaseLabelsOnCanvas(ctx) {
-    ctx.fillStyle = '#8b0000';
-    ctx.font = 'bold 14px "Comic Sans MS", cursive';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    
-    // Problem Analysis
-    ctx.fillText('Problem Analysis', 475, 550);
-    
-    // Executing Plan
-    ctx.fillText('Executing Plan', 725, 550);
-  }
-
-  drawMilestonesOnCanvas(ctx) {
-    // Get current milestone positions (same logic as SVG rendering)
-    const activeMilestones = this.milestones;
-    const sortedMilestones = [...activeMilestones].sort((a, b) => a.x - b.x);
-    const overlapThreshold = 35;
-    const stackOffset = 30;
-    const finalPositions = [];
-
-    // Position milestones (same logic as renderMilestonePoints)
-    sortedMilestones.forEach((milestone) => {
-      let adjustedX = milestone.x;
-      let adjustedY = this.getHillY(adjustedX);
-      
-      // Check for overlaps and stack
-      let stackLevel = 0;
-      for (const pos of finalPositions) {
-        if (Math.abs(adjustedX - pos.x) < overlapThreshold) {
-          stackLevel++;
-          adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
-        }
-      }
-      
-      finalPositions.push({ milestone, x: adjustedX, y: adjustedY });
-    });
-
-    // Draw each milestone
-    finalPositions.forEach((pos) => {
-      const { milestone, x, y } = pos;
-      
-      // Draw circle
-      ctx.fillStyle = '#cc0000';
-      ctx.strokeStyle = '#ffff00';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(x, y, 10, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.stroke();
-      
-      // Draw text
-      const hillCenter = (this.hillStartX + this.hillEndX) / 2;
-      const isLeftSide = x < hillCenter;
-      const textOffset = 50;
-      const textX = isLeftSide ? x - textOffset : x + textOffset;
-      
-      ctx.fillStyle = '#8b0000';
-      ctx.strokeStyle = '#ffff00';
-      ctx.lineWidth = 0.5;
-      ctx.font = 'bold 11px "Comic Sans MS", cursive';
-      ctx.textAlign = isLeftSide ? 'end' : 'start';
-      ctx.textBaseline = 'middle';
-      
-      // Draw text with yellow outline
-      ctx.strokeText(milestone.name, textX, y);
-      ctx.fillText(milestone.name, textX, y);
-    });
-  }
 
   clearAll() {
     if (
