@@ -3,7 +3,7 @@ class HillChartGenerator {
     this.svg = document.getElementById("hillChart");
     this.milestoneInput = document.getElementById("milestoneInput");
     this.addMilestoneBtn = document.getElementById("addMilestone");
-    this.exportBtn = document.getElementById("exportBtn");
+    this.downloadBtn = document.getElementById("downloadBtn");
     this.clearBtn = document.getElementById("clearBtn");
     this.milestoneList = document.getElementById("milestoneList");
 
@@ -58,7 +58,7 @@ class HillChartGenerator {
     this.milestoneInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") this.addMilestone();
     });
-    this.exportBtn.addEventListener("click", () => this.exportData());
+    this.downloadBtn.addEventListener("click", () => this.downloadImage());
     this.clearBtn.addEventListener("click", () => this.clearAll());
   }
 
@@ -317,25 +317,131 @@ class HillChartGenerator {
   }
 
 
-  exportData() {
-    const data = {
-      milestones: this.milestones.map((milestone) => ({
-        name: milestone.name,
-        progress: Math.round(milestone.progress * 100),
-        phase: milestone.progress < 0.5 ? "Problem Analysis" : "Executing Plan",
-      })),
-      exportDate: new Date().toISOString(),
-    };
+  downloadImage() {
+    // Create a high-resolution canvas
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const scale = 2; // High resolution
+    
+    canvas.width = this.chartWidth * scale;
+    canvas.height = this.chartHeight * scale;
+    ctx.scale(scale, scale);
+    
+    // Fill background with gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, this.chartHeight);
+    gradient.addColorStop(0, '#fffacd');
+    gradient.addColorStop(1, '#f0e68c');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, this.chartWidth, this.chartHeight);
+    
+    // Draw hill curve
+    this.drawHillCurveOnCanvas(ctx);
+    
+    // Draw phase labels
+    this.drawPhaseLabelsOnCanvas(ctx);
+    
+    // Draw milestones
+    this.drawMilestonesOnCanvas(ctx);
+    
+    // Download the image
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `hill-chart-${Date.now()}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  }
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
+  drawHillCurveOnCanvas(ctx) {
+    ctx.strokeStyle = '#cc0000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    const numPoints = 100;
+    for (let i = 0; i <= numPoints; i++) {
+      const x = this.hillStartX + (this.hillEndX - this.hillStartX) * (i / numPoints);
+      const y = this.getHillY(x);
+      
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    
+    ctx.stroke();
+  }
+
+  drawPhaseLabelsOnCanvas(ctx) {
+    ctx.fillStyle = '#8b0000';
+    ctx.font = 'bold 14px "Comic Sans MS", cursive';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Problem Analysis
+    ctx.fillText('Problem Analysis', 475, 550);
+    
+    // Executing Plan
+    ctx.fillText('Executing Plan', 725, 550);
+  }
+
+  drawMilestonesOnCanvas(ctx) {
+    // Get current milestone positions (same logic as SVG rendering)
+    const activeMilestones = this.milestones;
+    const sortedMilestones = [...activeMilestones].sort((a, b) => a.x - b.x);
+    const overlapThreshold = 35;
+    const stackOffset = 30;
+    const finalPositions = [];
+
+    // Position milestones (same logic as renderMilestonePoints)
+    sortedMilestones.forEach((milestone) => {
+      let adjustedX = milestone.x;
+      let adjustedY = this.getHillY(adjustedX);
+      
+      // Check for overlaps and stack
+      let stackLevel = 0;
+      for (const pos of finalPositions) {
+        if (Math.abs(adjustedX - pos.x) < overlapThreshold) {
+          stackLevel++;
+          adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
+        }
+      }
+      
+      finalPositions.push({ milestone, x: adjustedX, y: adjustedY });
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `hill-chart-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+
+    // Draw each milestone
+    finalPositions.forEach((pos) => {
+      const { milestone, x, y } = pos;
+      
+      // Draw circle
+      ctx.fillStyle = '#cc0000';
+      ctx.strokeStyle = '#ffff00';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(x, y, 10, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
+      
+      // Draw text
+      const hillCenter = (this.hillStartX + this.hillEndX) / 2;
+      const isLeftSide = x < hillCenter;
+      const textOffset = 50;
+      const textX = isLeftSide ? x - textOffset : x + textOffset;
+      
+      ctx.fillStyle = '#8b0000';
+      ctx.strokeStyle = '#ffff00';
+      ctx.lineWidth = 0.5;
+      ctx.font = 'bold 11px "Comic Sans MS", cursive';
+      ctx.textAlign = isLeftSide ? 'end' : 'start';
+      ctx.textBaseline = 'middle';
+      
+      // Draw text with yellow outline
+      ctx.strokeText(milestone.name, textX, y);
+      ctx.fillText(milestone.name, textX, y);
+    });
   }
 
   clearAll() {
