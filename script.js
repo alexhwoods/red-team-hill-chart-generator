@@ -333,7 +333,7 @@ class HillChartGenerator {
     const chartContainer = document.querySelector('.hill-chart-container');
     
     html2canvas(chartContainer, {
-      scale: 2,
+      scale: 3,
       useCORS: true,
       backgroundColor: null,
       logging: false
