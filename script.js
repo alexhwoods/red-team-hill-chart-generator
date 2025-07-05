@@ -43,12 +43,23 @@ class HillChartGenerator {
       points.push({ x, y });
     }
 
-    // Build SVG path using the sampled points
+    // Build smooth SVG path using quadratic curves
     let path = `M ${points[0].x} ${points[0].y}`;
 
-    for (let i = 1; i < points.length; i++) {
-      path += ` L ${points[i].x} ${points[i].y}`;
+    for (let i = 1; i < points.length - 1; i++) {
+      const current = points[i];
+      const next = points[i + 1];
+      
+      // Use quadratic curve to current point with next point as control
+      const controlX = (current.x + next.x) / 2;
+      const controlY = (current.y + next.y) / 2;
+      
+      path += ` Q ${current.x} ${current.y} ${controlX} ${controlY}`;
     }
+    
+    // Final line to last point
+    const lastPoint = points[points.length - 1];
+    path += ` T ${lastPoint.x} ${lastPoint.y}`;
 
     return path;
   }
