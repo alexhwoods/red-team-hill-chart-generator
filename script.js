@@ -132,7 +132,7 @@ class HillChartGenerator {
     const sortedMilestones = [...activeMilestones].sort((a, b) => a.x - b.x);
 
     // Handle stacking with priority for dragged milestone
-    const overlapThreshold = 35; // pixels
+    const dotRadius = 10; // radius of milestone dots
     const stackOffset = 30; // pixels to stack overlapping milestones vertically
     const finalPositions = [];
 
@@ -156,10 +156,16 @@ class HillChartGenerator {
         let adjustedX = milestone.x;
         let adjustedY = this.getHillY(adjustedX);
         
-        // Check if this milestone overlaps with any already positioned milestone
+        // Check if this milestone would visually overlap with any already positioned milestone
         let stackLevel = 0;
         for (const pos of finalPositions) {
-          if (Math.abs(adjustedX - pos.x) < overlapThreshold) {
+          const horizontalDistance = Math.abs(adjustedX - pos.x);
+          const verticalDistance = Math.abs(adjustedY - pos.y);
+          
+          // Check if dots would actually overlap (considering both X and Y positions)
+          const wouldOverlap = horizontalDistance < (dotRadius * 2) && verticalDistance < (dotRadius * 2);
+          
+          if (wouldOverlap) {
             stackLevel++;
             adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
           }
