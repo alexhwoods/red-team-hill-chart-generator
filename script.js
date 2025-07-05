@@ -404,9 +404,9 @@ class HillChartGenerator {
   }
 
   downloadImage() {
-    const chartContainer = document.querySelector(".hill-chart-container");
+    const chartContent = document.querySelector(".chart-content");
 
-    html2canvas(chartContainer, {
+    html2canvas(chartContent, {
       scale: 3,
       useCORS: true,
       backgroundColor: null,
