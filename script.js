@@ -82,11 +82,13 @@ class HillChartGenerator {
     const milestoneName = this.milestoneInput.value.trim();
     if (!milestoneName) return;
 
+    this.dragOrder++;
     const milestone = {
       id: Date.now(),
       name: milestoneName,
       x: this.hillStartX + (this.hillEndX - this.hillStartX) * 0.1,
       progress: 0.1,
+      dragOrder: this.dragOrder, // Initialize with dragOrder
     };
 
     this.milestones.push(milestone);
@@ -134,8 +136,14 @@ class HillChartGenerator {
 
     const activeMilestones = this.milestones;
     
-    // Sort milestones by x position for consistent stacking
-    const sortedMilestones = [...activeMilestones].sort((a, b) => a.x - b.x);
+    // Sort milestones by x position for consistent stacking, but preserve drag order for tied positions
+    const sortedMilestones = [...activeMilestones].sort((a, b) => {
+      if (Math.abs(a.x - b.x) < 5) { // If positions are very close (within 5px)
+        // Use drag order to break ties (higher dragOrder = more recent = higher priority)
+        return (b.dragOrder || 0) - (a.dragOrder || 0);
+      }
+      return a.x - b.x;
+    });
 
     // Handle stacking with priority for dragged milestone
     const dotRadius = 10; // radius of milestone dots
@@ -148,10 +156,14 @@ class HillChartGenerator {
       priorityMilestone = sortedMilestones.find(m => m.id === this.draggedMilestone.id);
     } else {
       // Find the most recently dragged milestone by drag order
-      const recentlyDragged = sortedMilestones.filter(m => m.dragOrder);
-      if (recentlyDragged.length > 0) {
-        priorityMilestone = recentlyDragged.sort((a, b) => b.dragOrder - a.dragOrder)[0];
-      }
+      // Always give priority to the highest dragOrder milestone
+      let highestDragOrder = 0;
+      sortedMilestones.forEach(m => {
+        if (m.dragOrder && m.dragOrder > highestDragOrder) {
+          highestDragOrder = m.dragOrder;
+          priorityMilestone = m;
+        }
+      });
     }
     
     if (priorityMilestone) {
@@ -292,6 +304,11 @@ class HillChartGenerator {
     milestoneGroup.addEventListener("mousedown", (e) => {
       isDragging = true;
       this.draggedMilestone = milestone;
+      
+      // Give priority immediately when drag starts
+      this.dragOrder++;
+      milestone.dragOrder = this.dragOrder;
+      
       milestoneGroup.classList.add("dragging");
       e.preventDefault();
     });
@@ -334,12 +351,14 @@ class HillChartGenerator {
     document.addEventListener("mouseup", () => {
       if (isDragging && this.draggedMilestone === milestone) {
         isDragging = false;
-        this.draggedMilestone = null;
         milestoneGroup.classList.remove("dragging");
         
-        // Give the just-dragged milestone priority by updating its drag order
+        // Give the just-dragged milestone priority by updating its drag order BEFORE clearing draggedMilestone
         this.dragOrder++;
         milestone.dragOrder = this.dragOrder;
+        
+        // Clear dragged milestone reference after setting priority
+        this.draggedMilestone = null;
         
         // Full render when drag is complete to handle stacking
         this.render();
@@ -460,7 +479,13 @@ class HillChartGenerator {
     // Need to use the same positioning logic as renderMilestonePoints
     const gaps = [];
     const activeMilestones = this.milestones;
-    const sortedMilestones = [...activeMilestones].sort((a, b) => a.x - b.x);
+    const sortedMilestones = [...activeMilestones].sort((a, b) => {
+      if (Math.abs(a.x - b.x) < 5) { // If positions are very close (within 5px)
+        // Use drag order to break ties (higher dragOrder = more recent = higher priority)
+        return (b.dragOrder || 0) - (a.dragOrder || 0);
+      }
+      return a.x - b.x;
+    });
     const dotRadius = 10;
     const stackOffset = 30;
     const finalPositions = [];
@@ -561,6 +586,18 @@ class HillChartGenerator {
     const saved = localStorage.getItem("hillChartMilestones");
     if (saved) {
       this.milestones = JSON.parse(saved);
+      
+      // Initialize dragOrder for any milestones that don't have it
+      this.milestones.forEach(milestone => {
+        if (!milestone.dragOrder) {
+          this.dragOrder++;
+          milestone.dragOrder = this.dragOrder;
+        } else {
+          // Update dragOrder counter to be higher than existing values
+          this.dragOrder = Math.max(this.dragOrder, milestone.dragOrder);
+        }
+      });
+      
       this.render();
     }
   }
