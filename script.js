@@ -13,8 +13,8 @@ class HillChartGenerator {
     this.chartHeight = 600;
     this.hillStartX = 250;
     this.hillEndX = 950;
-    this.hillTopY = 120;
-    this.hillBottomY = 420;
+    this.hillTopY = 180;
+    this.hillBottomY = 480;
 
     this.init();
   }
@@ -122,7 +122,7 @@ class HillChartGenerator {
 
     // Handle stacking with priority for dragged milestone
     const overlapThreshold = 35; // pixels
-    const stackOffset = 40; // pixels to stack overlapping milestones vertically
+    const stackOffset = 30; // pixels to stack overlapping milestones vertically
     const finalPositions = [];
 
     // First: Position the dragged milestone on the hill curve if it exists
