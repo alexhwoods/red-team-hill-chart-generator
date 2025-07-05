@@ -162,10 +162,13 @@ class HillChartGenerator {
           const horizontalDistance = Math.abs(adjustedX - pos.x);
           const verticalDistance = Math.abs(adjustedY - pos.y);
           
-          // Check if dots would actually overlap (considering both X and Y positions)
+          // Check if dots are close enough horizontally to consider stacking
+          const horizontalThreshold = dotRadius * 3; // Allow some horizontal proximity
+          
+          // If horizontally close, then check vertical overlap
           // Allow 25% vertical overlap before stacking
           const allowedVerticalOverlap = dotRadius * 2 * 0.75; // 75% of full diameter = 25% overlap allowed
-          const wouldOverlap = horizontalDistance < (dotRadius * 2) && verticalDistance < allowedVerticalOverlap;
+          const wouldOverlap = horizontalDistance < horizontalThreshold && verticalDistance < allowedVerticalOverlap;
           
           if (wouldOverlap) {
             stackLevel++;
@@ -286,7 +289,22 @@ class HillChartGenerator {
       const x = e.clientX - rect.left;
 
       // Clamp x to hill bounds but continue dragging
-      const clampedX = Math.max(this.hillStartX, Math.min(this.hillEndX, x));
+      let clampedX = Math.max(this.hillStartX, Math.min(this.hillEndX, x));
+      
+      // Snap to key positions if close enough
+      const snapThreshold = 30; // pixels
+      const snapPoints = [
+        this.hillStartX,     // Start (0%)
+        (this.hillStartX + this.hillEndX) / 2,  // Peak (50%) 
+        this.hillEndX        // End (100%)
+      ];
+      
+      for (const snapPoint of snapPoints) {
+        if (Math.abs(clampedX - snapPoint) < snapThreshold) {
+          clampedX = snapPoint;
+          break;
+        }
+      }
       
       milestone.x = clampedX;
       milestone.progress =
