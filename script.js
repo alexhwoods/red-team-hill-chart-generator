@@ -93,6 +93,7 @@ class HillChartGenerator {
       x: this.hillStartX + (this.hillEndX - this.hillStartX) * 0.1,
       progress: 0.1,
       dragOrder: this.dragOrder, // Initialize with dragOrder
+      textOffsetX: 0, // Text offset relative to dot
     };
 
     this.milestones.push(milestone);
@@ -105,6 +106,30 @@ class HillChartGenerator {
     this.milestones = this.milestones.filter(
       (milestone) => milestone.id !== milestoneId
     );
+    this.render();
+    this.saveMilestones();
+  }
+
+  nudgeMilestone(milestoneId, offsetPixels) {
+    const milestone = this.milestones.find((m) => m.id === milestoneId);
+    if (!milestone) return;
+
+    // Initialize textOffsetX if it doesn't exist (for backward compatibility)
+    if (milestone.textOffsetX === undefined) {
+      milestone.textOffsetX = 0;
+    }
+
+    // Determine which side of the hill this milestone is on
+    const hillCenter = (this.hillStartX + this.hillEndX) / 2;
+    const isLeftSide = milestone.x < hillCenter;
+
+    // For left side milestones, we need to invert the offset direction
+    // because the text positioning formula subtracts the custom offset
+    const adjustedOffset = isLeftSide ? -offsetPixels : offsetPixels;
+
+    // Update text offset relative to dot
+    milestone.textOffsetX += adjustedOffset;
+
     this.render();
     this.saveMilestones();
   }
@@ -246,10 +271,13 @@ class HillChartGenerator {
       // Position text on left side if milestone is on left side of hill
       const hillCenter = (this.hillStartX + this.hillEndX) / 2;
       const isLeftSide = adjustedX < hillCenter;
-      const textOffset = 80;
+      const baseTextOffset = 80;
+
+      // Apply custom text offset if it exists
+      const customOffsetX = milestone.textOffsetX || 0;
       const textX = isLeftSide
-        ? adjustedX - textOffset
-        : adjustedX + textOffset;
+        ? adjustedX - baseTextOffset - customOffsetX // For left side, negative custom offset moves text right (closer to dot)
+        : adjustedX + baseTextOffset + customOffsetX; // For right side, positive custom offset moves text right (away from dot)
       const textAnchor = isLeftSide ? "end" : "start";
 
       this.createWrappedText(
@@ -396,7 +424,11 @@ class HillChartGenerator {
                     <span class="milestone-name">${milestone.name}</span>
                     <span class="milestone-position">${progress}% - ${phase}</span>
                 </div>
-                <button class="remove-btn" onclick="hillChart.removeMilestone(${milestone.id})">×</button>
+                <div class="milestone-controls">
+                    <button class="nudge-btn nudge-left" onclick="hillChart.nudgeMilestone(${milestone.id}, -5)">⬅️</button>
+                    <button class="nudge-btn nudge-right" onclick="hillChart.nudgeMilestone(${milestone.id}, 5)">➡️</button>
+                    <button class="remove-btn" onclick="hillChart.removeMilestone(${milestone.id})">×</button>
+                </div>
             `;
 
       this.milestoneList.appendChild(li);
@@ -631,7 +663,7 @@ class HillChartGenerator {
     if (saved) {
       this.milestones = JSON.parse(saved);
 
-      // Initialize dragOrder for any milestones that don't have it
+      // Initialize dragOrder and textOffsetX for any milestones that don't have them
       this.milestones.forEach((milestone) => {
         if (!milestone.dragOrder) {
           this.dragOrder++;
@@ -639,6 +671,11 @@ class HillChartGenerator {
         } else {
           // Update dragOrder counter to be higher than existing values
           this.dragOrder = Math.max(this.dragOrder, milestone.dragOrder);
+        }
+
+        // Initialize textOffsetX for backward compatibility
+        if (milestone.textOffsetX === undefined) {
+          milestone.textOffsetX = 0;
         }
       });
 

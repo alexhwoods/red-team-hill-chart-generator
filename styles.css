@@ -225,6 +225,7 @@ button:hover {
   text-align: center;
 }
 
+
 #milestoneList {
   list-style: none;
 }
@@ -240,6 +241,29 @@ button:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.milestone-controls {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.nudge-btn {
+  background: linear-gradient(135deg, #ffff00 0%, #ffd700 100%);
+  color: #8b0000;
+  border: 1px solid #cc0000;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  min-width: 30px;
+}
+
+.nudge-btn:hover {
+  background: linear-gradient(135deg, #ffd700 0%, #ffff00 100%);
+  transform: scale(1.1);
 }
 
 .milestone-item .milestone-name {
