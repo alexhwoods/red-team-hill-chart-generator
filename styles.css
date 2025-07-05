@@ -134,7 +134,7 @@ button:hover {
 .chart-content {
   padding: 3px;
   margin: 0;
-  background: transparent;
+  background: linear-gradient(135deg, #fffacd 0%, #f0e68c 100%);
   border-radius: 8px;
 }
 
