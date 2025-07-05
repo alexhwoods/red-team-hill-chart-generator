@@ -121,6 +121,7 @@ class HillChartGenerator {
   render() {
     this.renderMilestonePoints();
     this.renderMilestoneList();
+    this.updateCenterLine();
   }
 
   renderMilestonePoints() {
@@ -423,6 +424,65 @@ class HillChartGenerator {
       "hillChartMilestones",
       JSON.stringify(this.milestones)
     );
+  }
+
+  updateCenterLine() {
+    const centerLineGroup = this.svg.querySelector('.center-line');
+    centerLineGroup.innerHTML = '';
+    
+    const hillCenter = (this.hillStartX + this.hillEndX) / 2; // x=600
+    const gapSize = 20; // pixels gap around milestones
+    const lineStart = 50;
+    const lineEnd = 480;
+    
+    // Find all gaps where milestones are near the center line
+    const gaps = [];
+    this.milestones.forEach(milestone => {
+      if (Math.abs(milestone.x - hillCenter) < gapSize) {
+        const milestoneY = this.getHillY(milestone.x);
+        gaps.push({
+          start: milestoneY - gapSize,
+          end: milestoneY + gapSize
+        });
+      }
+    });
+    
+    // Merge overlapping gaps
+    gaps.sort((a, b) => a.start - b.start);
+    const mergedGaps = [];
+    for (const gap of gaps) {
+      if (mergedGaps.length === 0 || gap.start > mergedGaps[mergedGaps.length - 1].end) {
+        mergedGaps.push(gap);
+      } else {
+        mergedGaps[mergedGaps.length - 1].end = Math.max(mergedGaps[mergedGaps.length - 1].end, gap.end);
+      }
+    }
+    
+    // Draw line segments between gaps
+    let currentY = lineStart;
+    for (const gap of mergedGaps) {
+      if (currentY < gap.start) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', hillCenter);
+        line.setAttribute('y1', currentY);
+        line.setAttribute('x2', hillCenter);
+        line.setAttribute('y2', gap.start);
+        line.setAttribute('class', 'center-guide-line');
+        centerLineGroup.appendChild(line);
+      }
+      currentY = gap.end;
+    }
+    
+    // Draw final segment if needed
+    if (currentY < lineEnd) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', hillCenter);
+      line.setAttribute('y1', currentY);
+      line.setAttribute('x2', hillCenter);
+      line.setAttribute('y2', lineEnd);
+      line.setAttribute('class', 'center-guide-line');
+      centerLineGroup.appendChild(line);
+    }
   }
 
   loadMilestones() {

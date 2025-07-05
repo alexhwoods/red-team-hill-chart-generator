@@ -138,6 +138,14 @@ button:hover {
     font-family: 'Comic Sans MS', cursive;
 }
 
+.center-guide-line {
+    stroke: #cc0000;
+    stroke-width: 1;
+    opacity: 0.3;
+    stroke-dasharray: 5,5;
+    transition: opacity 0.3s;
+}
+
 .milestone-point {
     cursor: pointer;
     transition: all 0.3s;
