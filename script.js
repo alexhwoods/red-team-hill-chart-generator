@@ -266,17 +266,18 @@ class HillChartGenerator {
       const rect = this.svg.getBoundingClientRect();
       const x = e.clientX - rect.left;
 
-      if (x >= this.hillStartX && x <= this.hillEndX) {
-        milestone.x = x;
-        milestone.progress =
-          (x - this.hillStartX) / (this.hillEndX - this.hillStartX);
-        
-        // The dragged milestone always stays on the hill curve
-        let newY = this.getHillY(x);
-        
-        // Force re-render to handle stacking of other milestones
-        this.render();
-      }
+      // Clamp x to hill bounds but continue dragging
+      const clampedX = Math.max(this.hillStartX, Math.min(this.hillEndX, x));
+      
+      milestone.x = clampedX;
+      milestone.progress =
+        (clampedX - this.hillStartX) / (this.hillEndX - this.hillStartX);
+      
+      // The dragged milestone always stays on the hill curve
+      let newY = this.getHillY(clampedX);
+      
+      // Force re-render to handle stacking of other milestones
+      this.render();
     });
 
     document.addEventListener("mouseup", () => {
