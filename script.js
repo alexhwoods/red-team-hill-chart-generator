@@ -55,14 +55,14 @@ class HillChartGenerator {
     for (let i = 1; i < points.length - 1; i++) {
       const current = points[i];
       const next = points[i + 1];
-      
+
       // Use quadratic curve to current point with next point as control
       const controlX = (current.x + next.x) / 2;
       const controlY = (current.y + next.y) / 2;
-      
+
       path += ` Q ${current.x} ${current.y} ${controlX} ${controlY}`;
     }
-    
+
     // Final line to last point
     const lastPoint = points[points.length - 1];
     path += ` T ${lastPoint.x} ${lastPoint.y}`;
@@ -75,7 +75,9 @@ class HillChartGenerator {
     this.milestoneInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") this.addMilestone();
     });
-    this.titleInput.addEventListener("input", (e) => this.updateTitle(e.target.value));
+    this.titleInput.addEventListener("input", (e) =>
+      this.updateTitle(e.target.value)
+    );
     this.downloadBtn.addEventListener("click", () => this.downloadImage());
     this.clearBtn.addEventListener("click", () => this.clearAll());
   }
@@ -137,10 +139,11 @@ class HillChartGenerator {
     milestonePoints.innerHTML = "";
 
     const activeMilestones = this.milestones;
-    
+
     // Sort milestones by x position for consistent stacking, but preserve drag order for tied positions
     const sortedMilestones = [...activeMilestones].sort((a, b) => {
-      if (Math.abs(a.x - b.x) < 5) { // If positions are very close (within 5px)
+      if (Math.abs(a.x - b.x) < 5) {
+        // If positions are very close (within 5px)
         // Use drag order to break ties (higher dragOrder = more recent = higher priority)
         return (b.dragOrder || 0) - (a.dragOrder || 0);
       }
@@ -155,55 +158,60 @@ class HillChartGenerator {
     // First: Position the currently dragged milestone OR recently dragged milestone on the hill curve
     let priorityMilestone = null;
     if (this.draggedMilestone) {
-      priorityMilestone = sortedMilestones.find(m => m.id === this.draggedMilestone.id);
+      priorityMilestone = sortedMilestones.find(
+        (m) => m.id === this.draggedMilestone.id
+      );
     } else {
       // Find the most recently dragged milestone by drag order
       // Always give priority to the highest dragOrder milestone
       let highestDragOrder = 0;
-      sortedMilestones.forEach(m => {
+      sortedMilestones.forEach((m) => {
         if (m.dragOrder && m.dragOrder > highestDragOrder) {
           highestDragOrder = m.dragOrder;
           priorityMilestone = m;
         }
       });
     }
-    
+
     if (priorityMilestone) {
-      finalPositions.push({ 
-        milestone: priorityMilestone, 
-        x: priorityMilestone.x, 
-        y: this.getHillY(priorityMilestone.x) 
+      finalPositions.push({
+        milestone: priorityMilestone,
+        x: priorityMilestone.x,
+        y: this.getHillY(priorityMilestone.x),
       });
     }
 
     // Second: Position all other milestones, stacking them if they overlap
     sortedMilestones.forEach((milestone) => {
-      const isPriorityMilestone = priorityMilestone && priorityMilestone.id === milestone.id;
-      
+      const isPriorityMilestone =
+        priorityMilestone && priorityMilestone.id === milestone.id;
+
       if (!isPriorityMilestone) {
         let adjustedX = milestone.x;
         let adjustedY = this.getHillY(adjustedX);
-        
+
         // Check if this milestone would visually overlap with any already positioned milestone
         let stackLevel = 0;
         for (const pos of finalPositions) {
           const horizontalDistance = Math.abs(adjustedX - pos.x);
           const verticalDistance = Math.abs(adjustedY - pos.y);
-          
+
           // Check if dots are close enough horizontally to consider stacking
           const horizontalThreshold = 10 * dotRadius;
-          
+
           // If horizontally close, then check vertical overlap
           // Allow 25% vertical overlap before stacking
           const allowedVerticalOverlap = dotRadius * 2 * 0.75; // 75% of full diameter = 25% overlap allowed
-          const wouldOverlap = horizontalDistance < horizontalThreshold && verticalDistance < allowedVerticalOverlap;
-          
+          const wouldOverlap =
+            horizontalDistance < horizontalThreshold &&
+            verticalDistance < allowedVerticalOverlap;
+
           if (wouldOverlap) {
             stackLevel++;
             adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
           }
         }
-        
+
         finalPositions.push({ milestone, x: adjustedX, y: adjustedY });
       }
     });
@@ -239,7 +247,9 @@ class HillChartGenerator {
       const hillCenter = (this.hillStartX + this.hillEndX) / 2;
       const isLeftSide = adjustedX < hillCenter;
       const textOffset = 80;
-      const textX = isLeftSide ? adjustedX - textOffset : adjustedX + textOffset;
+      const textX = isLeftSide
+        ? adjustedX - textOffset
+        : adjustedX + textOffset;
       const textAnchor = isLeftSide ? "end" : "start";
 
       this.createWrappedText(
@@ -281,7 +291,6 @@ class HillChartGenerator {
     }
     if (currentLine) lines.push(currentLine);
 
-
     // Create SVG text elements for each line
     lines.forEach((line, index) => {
       const textElement = document.createElementNS(
@@ -306,11 +315,11 @@ class HillChartGenerator {
     milestoneGroup.addEventListener("mousedown", (e) => {
       isDragging = true;
       this.draggedMilestone = milestone;
-      
+
       // Give priority immediately when drag starts
       this.dragOrder++;
       milestone.dragOrder = this.dragOrder;
-      
+
       milestoneGroup.classList.add("dragging");
       e.preventDefault();
     });
@@ -323,29 +332,29 @@ class HillChartGenerator {
 
       // Clamp x to hill bounds but continue dragging
       let clampedX = Math.max(this.hillStartX, Math.min(this.hillEndX, x));
-      
+
       // Snap to key positions if close enough
       const snapThreshold = 30; // pixels
       const snapPoints = [
-        this.hillStartX,     // Start (0%)
-        (this.hillStartX + this.hillEndX) / 2,  // Peak (50%) 
-        this.hillEndX        // End (100%)
+        this.hillStartX, // Start (0%)
+        (this.hillStartX + this.hillEndX) / 2, // Peak (50%)
+        this.hillEndX, // End (100%)
       ];
-      
+
       for (const snapPoint of snapPoints) {
         if (Math.abs(clampedX - snapPoint) < snapThreshold) {
           clampedX = snapPoint;
           break;
         }
       }
-      
+
       milestone.x = clampedX;
       milestone.progress =
         (clampedX - this.hillStartX) / (this.hillEndX - this.hillStartX);
-      
+
       // The dragged milestone always stays on the hill curve
       let newY = this.getHillY(clampedX);
-      
+
       // Force re-render to handle stacking of other milestones
       this.render();
     });
@@ -354,14 +363,14 @@ class HillChartGenerator {
       if (isDragging && this.draggedMilestone === milestone) {
         isDragging = false;
         milestoneGroup.classList.remove("dragging");
-        
+
         // Give the just-dragged milestone priority by updating its drag order BEFORE clearing draggedMilestone
         this.dragOrder++;
         milestone.dragOrder = this.dragOrder;
-        
+
         // Clear dragged milestone reference after setting priority
         this.draggedMilestone = null;
-        
+
         // Full render when drag is complete to handle stacking
         this.render();
         this.saveMilestones();
@@ -380,7 +389,7 @@ class HillChartGenerator {
 
       const progress = Math.round(milestone.progress * 100);
       const phase =
-        milestone.progress < 0.5 ? "Problem Analysis" : "Executing Plan";
+        milestone.progress < 0.5 ? "Figuring Things Out" : "Making It Happen";
 
       li.innerHTML = `
                 <div>
@@ -394,35 +403,38 @@ class HillChartGenerator {
     });
   }
 
-
   downloadImage() {
-    const chartContainer = document.querySelector('.hill-chart-container');
-    
+    const chartContainer = document.querySelector(".hill-chart-container");
+
     html2canvas(chartContainer, {
       scale: 3,
       useCORS: true,
       backgroundColor: null,
-      logging: false
-    }).then(canvas => {
-      // Convert canvas to blob and download
-      canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `hill-chart-${Date.now()}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }, 'image/png');
-    }).catch(error => {
-      console.error('Error generating image:', error);
-      alert('Failed to generate image. Please try again.');
-    });
+      logging: false,
+    })
+      .then((canvas) => {
+        // Convert canvas to blob and download
+        canvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `hill-chart-${Date.now()}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }, "image/png");
+      })
+      .catch((error) => {
+        console.error("Error generating image:", error);
+        alert("Failed to generate image. Please try again.");
+      });
   }
 
   downloadSVG() {
     // Fallback: download the raw SVG file
     const svgData = new XMLSerializer().serializeToString(this.svg);
-    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const svgBlob = new Blob([svgData], {
+      type: "image/svg+xml;charset=utf-8",
+    });
     const url = URL.createObjectURL(svgBlob);
     const a = document.createElement("a");
     a.href = url;
@@ -430,7 +442,6 @@ class HillChartGenerator {
     a.click();
     URL.revokeObjectURL(url);
   }
-
 
   updateTitle(title) {
     this.chartTitle.textContent = title || "Chart Title";
@@ -451,12 +462,12 @@ class HillChartGenerator {
 
   setTodaysDate() {
     const today = new Date();
-    const options = { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    const options = {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     };
-    const dateString = today.toLocaleDateString('en-US', options);
+    const dateString = today.toLocaleDateString("en-US", options);
     this.chartDate.textContent = dateString;
   }
 
@@ -480,20 +491,21 @@ class HillChartGenerator {
   }
 
   updateCenterLine() {
-    const centerLineGroup = this.svg.querySelector('.center-line');
-    centerLineGroup.innerHTML = '';
-    
+    const centerLineGroup = this.svg.querySelector(".center-line");
+    centerLineGroup.innerHTML = "";
+
     const hillCenter = (this.hillStartX + this.hillEndX) / 2; // x=600
     const gapSize = 20; // pixels gap around milestones
     const lineStart = 50;
     const lineEnd = 480;
-    
+
     // Find all gaps where milestones are near the center line
     // Need to use the same positioning logic as renderMilestonePoints
     const gaps = [];
     const activeMilestones = this.milestones;
     const sortedMilestones = [...activeMilestones].sort((a, b) => {
-      if (Math.abs(a.x - b.x) < 5) { // If positions are very close (within 5px)
+      if (Math.abs(a.x - b.x) < 5) {
+        // If positions are very close (within 5px)
         // Use drag order to break ties (higher dragOrder = more recent = higher priority)
         return (b.dragOrder || 0) - (a.dragOrder || 0);
       }
@@ -506,91 +518,110 @@ class HillChartGenerator {
     // Recreate the positioning logic to get actual milestone positions
     let priorityMilestone = null;
     if (this.draggedMilestone) {
-      priorityMilestone = sortedMilestones.find(m => m.id === this.draggedMilestone.id);
+      priorityMilestone = sortedMilestones.find(
+        (m) => m.id === this.draggedMilestone.id
+      );
     } else {
-      const recentlyDragged = sortedMilestones.filter(m => m.dragOrder);
+      const recentlyDragged = sortedMilestones.filter((m) => m.dragOrder);
       if (recentlyDragged.length > 0) {
-        priorityMilestone = recentlyDragged.sort((a, b) => b.dragOrder - a.dragOrder)[0];
+        priorityMilestone = recentlyDragged.sort(
+          (a, b) => b.dragOrder - a.dragOrder
+        )[0];
       }
     }
-    
+
     if (priorityMilestone) {
-      finalPositions.push({ 
-        milestone: priorityMilestone, 
-        x: priorityMilestone.x, 
-        y: this.getHillY(priorityMilestone.x) 
+      finalPositions.push({
+        milestone: priorityMilestone,
+        x: priorityMilestone.x,
+        y: this.getHillY(priorityMilestone.x),
       });
     }
 
     sortedMilestones.forEach((milestone) => {
-      const isPriorityMilestone = priorityMilestone && priorityMilestone.id === milestone.id;
-      
+      const isPriorityMilestone =
+        priorityMilestone && priorityMilestone.id === milestone.id;
+
       if (!isPriorityMilestone) {
         let adjustedX = milestone.x;
         let adjustedY = this.getHillY(adjustedX);
-        
+
         let stackLevel = 0;
         for (const pos of finalPositions) {
           const horizontalDistance = Math.abs(adjustedX - pos.x);
           const verticalDistance = Math.abs(adjustedY - pos.y);
           const horizontalThreshold = 10 * dotRadius;
           const allowedVerticalOverlap = dotRadius * 2 * 0.75;
-          const wouldOverlap = horizontalDistance < horizontalThreshold && verticalDistance < allowedVerticalOverlap;
-          
+          const wouldOverlap =
+            horizontalDistance < horizontalThreshold &&
+            verticalDistance < allowedVerticalOverlap;
+
           if (wouldOverlap) {
             stackLevel++;
             adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
           }
         }
-        
+
         finalPositions.push({ milestone, x: adjustedX, y: adjustedY });
       }
     });
 
     // Now check actual final positions for gaps
-    finalPositions.forEach(pos => {
+    finalPositions.forEach((pos) => {
       if (Math.abs(pos.x - hillCenter) < gapSize) {
         gaps.push({
           start: pos.y - gapSize,
-          end: pos.y + gapSize
+          end: pos.y + gapSize,
         });
       }
     });
-    
+
     // Merge overlapping gaps
     gaps.sort((a, b) => a.start - b.start);
     const mergedGaps = [];
     for (const gap of gaps) {
-      if (mergedGaps.length === 0 || gap.start > mergedGaps[mergedGaps.length - 1].end) {
+      if (
+        mergedGaps.length === 0 ||
+        gap.start > mergedGaps[mergedGaps.length - 1].end
+      ) {
         mergedGaps.push(gap);
       } else {
-        mergedGaps[mergedGaps.length - 1].end = Math.max(mergedGaps[mergedGaps.length - 1].end, gap.end);
+        mergedGaps[mergedGaps.length - 1].end = Math.max(
+          mergedGaps[mergedGaps.length - 1].end,
+          gap.end
+        );
       }
     }
-    
+
     // Draw line segments between gaps
     let currentY = lineStart;
     for (const gap of mergedGaps) {
       if (currentY < gap.start) {
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', hillCenter);
-        line.setAttribute('y1', currentY);
-        line.setAttribute('x2', hillCenter);
-        line.setAttribute('y2', gap.start);
-        line.setAttribute('class', 'center-guide-line');
+        const line = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "line"
+        );
+        line.setAttribute("x1", hillCenter);
+        line.setAttribute("y1", currentY);
+        line.setAttribute("x2", hillCenter);
+        line.setAttribute("y2", gap.start);
+        line.setAttribute("class", "center-guide-line");
         centerLineGroup.appendChild(line);
       }
       currentY = gap.end;
     }
-    
+
     // Draw final segment if needed
     if (currentY < lineEnd) {
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', hillCenter);
-      line.setAttribute('y1', currentY);
-      line.setAttribute('x2', hillCenter);
-      line.setAttribute('y2', lineEnd);
-      line.setAttribute('class', 'center-guide-line');
+      const line = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "line"
+      );
+      line.setAttribute("x1", hillCenter);
+      line.setAttribute("y1", currentY);
+      line.setAttribute("x2", hillCenter);
+      line.setAttribute("y2", lineEnd);
+      line.setAttribute("class", "center-guide-line");
       centerLineGroup.appendChild(line);
     }
   }
@@ -599,9 +630,9 @@ class HillChartGenerator {
     const saved = localStorage.getItem("hillChartMilestones");
     if (saved) {
       this.milestones = JSON.parse(saved);
-      
+
       // Initialize dragOrder for any milestones that don't have it
-      this.milestones.forEach(milestone => {
+      this.milestones.forEach((milestone) => {
         if (!milestone.dragOrder) {
           this.dragOrder++;
           milestone.dragOrder = this.dragOrder;
@@ -610,7 +641,7 @@ class HillChartGenerator {
           this.dragOrder = Math.max(this.dragOrder, milestone.dragOrder);
         }
       });
-      
+
       this.render();
     }
   }
