@@ -436,13 +436,64 @@ class HillChartGenerator {
     const lineEnd = 480;
     
     // Find all gaps where milestones are near the center line
+    // Need to use the same positioning logic as renderMilestonePoints
     const gaps = [];
-    this.milestones.forEach(milestone => {
-      if (Math.abs(milestone.x - hillCenter) < gapSize) {
-        const milestoneY = this.getHillY(milestone.x);
+    const activeMilestones = this.milestones;
+    const sortedMilestones = [...activeMilestones].sort((a, b) => a.x - b.x);
+    const dotRadius = 10;
+    const stackOffset = 30;
+    const finalPositions = [];
+
+    // Recreate the positioning logic to get actual milestone positions
+    let priorityMilestone = null;
+    if (this.draggedMilestone) {
+      priorityMilestone = sortedMilestones.find(m => m.id === this.draggedMilestone.id);
+    } else {
+      const recentlyDragged = sortedMilestones.filter(m => m.dragOrder);
+      if (recentlyDragged.length > 0) {
+        priorityMilestone = recentlyDragged.sort((a, b) => b.dragOrder - a.dragOrder)[0];
+      }
+    }
+    
+    if (priorityMilestone) {
+      finalPositions.push({ 
+        milestone: priorityMilestone, 
+        x: priorityMilestone.x, 
+        y: this.getHillY(priorityMilestone.x) 
+      });
+    }
+
+    sortedMilestones.forEach((milestone) => {
+      const isPriorityMilestone = priorityMilestone && priorityMilestone.id === milestone.id;
+      
+      if (!isPriorityMilestone) {
+        let adjustedX = milestone.x;
+        let adjustedY = this.getHillY(adjustedX);
+        
+        let stackLevel = 0;
+        for (const pos of finalPositions) {
+          const horizontalDistance = Math.abs(adjustedX - pos.x);
+          const verticalDistance = Math.abs(adjustedY - pos.y);
+          const horizontalThreshold = dotRadius * 3;
+          const allowedVerticalOverlap = dotRadius * 2 * 0.75;
+          const wouldOverlap = horizontalDistance < horizontalThreshold && verticalDistance < allowedVerticalOverlap;
+          
+          if (wouldOverlap) {
+            stackLevel++;
+            adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
+          }
+        }
+        
+        finalPositions.push({ milestone, x: adjustedX, y: adjustedY });
+      }
+    });
+
+    // Now check actual final positions for gaps
+    finalPositions.forEach(pos => {
+      if (Math.abs(pos.x - hillCenter) < gapSize) {
         gaps.push({
-          start: milestoneY - gapSize,
-          end: milestoneY + gapSize
+          start: pos.y - gapSize,
+          end: pos.y + gapSize
         });
       }
     });
