@@ -318,111 +318,27 @@ class HillChartGenerator {
 
 
   downloadImage() {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const scale = 2; // High resolution
+    const chartContainer = document.querySelector('.hill-chart-container');
     
-    // Set canvas size to match SVG
-    canvas.width = this.chartWidth * scale;
-    canvas.height = this.chartHeight * scale;
-    ctx.scale(scale, scale);
-    
-    // Get the SVG element's background gradient
-    const gradient = ctx.createLinearGradient(0, 0, 0, this.chartHeight);
-    gradient.addColorStop(0, '#fffacd');
-    gradient.addColorStop(1, '#f0e68c');
-    
-    // Fill background
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, this.chartWidth, this.chartHeight);
-    
-    // Draw hill curve
-    ctx.beginPath();
-    ctx.strokeStyle = '#cc0000';
-    ctx.lineWidth = 2;
-    
-    // Generate the same hill path as SVG
-    const points = [];
-    const numPoints = 50;
-    for (let i = 0; i <= numPoints; i++) {
-      const x = this.hillStartX + (this.hillEndX - this.hillStartX) * (i / numPoints);
-      const y = this.getHillY(x);
-      points.push({ x, y });
-    }
-    
-    ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x, points[i].y);
-    }
-    ctx.stroke();
-    
-    // Draw phase labels
-    ctx.fillStyle = '#8b0000';
-    ctx.font = 'bold 14px Comic Sans MS, cursive';
-    ctx.textAlign = 'center';
-    ctx.fillText('Problem Analysis', 475, 550);
-    ctx.fillText('Executing Plan', 725, 550);
-    
-    // Draw milestones by reading their exact DOM positions
-    const milestoneElements = this.svg.querySelectorAll('.milestone-point');
-    milestoneElements.forEach(element => {
-      const circle = element.querySelector('circle');
-      const textGroup = element.querySelector('g');
-      
-      if (circle) {
-        const cx = parseFloat(circle.getAttribute('cx'));
-        const cy = parseFloat(circle.getAttribute('cy'));
-        const r = parseFloat(circle.getAttribute('r'));
-        
-        // Draw circle
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, 2 * Math.PI);
-        ctx.fillStyle = '#cc0000';
-        ctx.fill();
-        ctx.strokeStyle = '#ffff00';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        
-        // Draw text using exact DOM positions
-        if (textGroup) {
-          const textElements = textGroup.querySelectorAll('text');
-          textElements.forEach(textEl => {
-            const x = parseFloat(textEl.getAttribute('x'));
-            const y = parseFloat(textEl.getAttribute('y'));
-            const text = textEl.textContent;
-            const textAnchor = textEl.getAttribute('text-anchor');
-            
-            ctx.fillStyle = '#8b0000';
-            ctx.strokeStyle = '#ffff00';
-            ctx.lineWidth = 0.5;
-            ctx.font = 'bold 11px Comic Sans MS, cursive';
-            
-            // Set text alignment based on text-anchor
-            if (textAnchor === 'end') {
-              ctx.textAlign = 'right';
-            } else if (textAnchor === 'start') {
-              ctx.textAlign = 'left';
-            } else {
-              ctx.textAlign = 'center';
-            }
-            
-            // Draw text with stroke and fill
-            ctx.strokeText(text, x, y);
-            ctx.fillText(text, x, y);
-          });
-        }
-      }
+    html2canvas(chartContainer, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: null,
+      logging: false
+    }).then(canvas => {
+      // Convert canvas to blob and download
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `hill-chart-${Date.now()}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    }).catch(error => {
+      console.error('Error generating image:', error);
+      alert('Failed to generate image. Please try again.');
     });
-    
-    // Convert canvas to blob and download
-    canvas.toBlob((blob) => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `hill-chart-${Date.now()}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }, 'image/png');
   }
 
   downloadSVG() {
