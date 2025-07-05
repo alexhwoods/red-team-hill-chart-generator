@@ -35,51 +35,40 @@
         <div class="chart-border">
           <div class="chart-content">
             <svg id="hillChart" width="1200" height="600">
-          <defs>
-            <linearGradient id="hillGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style="stop-color: #fffacd; stop-opacity: 1" />
-              <stop
-                offset="100%"
-                style="stop-color: #f0e68c; stop-opacity: 1"
-              />
-            </linearGradient>
-          </defs>
+              <g class="chart-title">
+                <text
+                  x="120"
+                  y="100"
+                  text-anchor="start"
+                  class="title-text"
+                  id="chartTitle"
+                >
+                  Chart Title
+                </text>
+                <text
+                  x="120"
+                  y="125"
+                  text-anchor="start"
+                  class="date-text"
+                  id="chartDate"
+                >
+                  Today's Date
+                </text>
+              </g>
 
+              <g class="hill-labels">
+                <text x="475" y="550" text-anchor="middle" class="phase-label">
+                  Figuring Things Out
+                </text>
+                <text x="725" y="550" text-anchor="middle" class="phase-label">
+                  Making It Happen
+                </text>
+              </g>
 
-          <g class="chart-title">
-            <text
-              x="120"
-              y="100"
-              text-anchor="start"
-              class="title-text"
-              id="chartTitle"
-            >
-              Chart Title
-            </text>
-            <text
-              x="120"
-              y="125"
-              text-anchor="start"
-              class="date-text"
-              id="chartDate"
-            >
-              Today's Date
-            </text>
-          </g>
-
-          <g class="hill-labels">
-            <text x="475" y="550" text-anchor="middle" class="phase-label">
-              Figuring Things Out
-            </text>
-            <text x="725" y="550" text-anchor="middle" class="phase-label">
-              Making It Happen
-            </text>
-          </g>
-
-          <g class="hill-curve"></g>
-          <g class="center-line"></g>
-          <g class="milestone-points"></g>
-        </svg>
+              <g class="hill-curve"></g>
+              <g class="center-line"></g>
+              <g class="milestone-points"></g>
+            </svg>
           </div>
         </div>
       </div>
