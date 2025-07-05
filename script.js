@@ -9,6 +9,7 @@ class HillChartGenerator {
 
     this.milestones = [];
     this.draggedMilestone = null;
+    this.dragOrder = 0;
     this.chartWidth = 1200;
     this.chartHeight = 600;
     this.hillStartX = 250;
@@ -136,23 +137,31 @@ class HillChartGenerator {
     const stackOffset = 30; // pixels to stack overlapping milestones vertically
     const finalPositions = [];
 
-    // First: Position the dragged milestone on the hill curve if it exists
+    // First: Position the currently dragged milestone OR recently dragged milestone on the hill curve
+    let priorityMilestone = null;
     if (this.draggedMilestone) {
-      const draggedMilestone = sortedMilestones.find(m => m.id === this.draggedMilestone.id);
-      if (draggedMilestone) {
-        finalPositions.push({ 
-          milestone: draggedMilestone, 
-          x: draggedMilestone.x, 
-          y: this.getHillY(draggedMilestone.x) 
-        });
+      priorityMilestone = sortedMilestones.find(m => m.id === this.draggedMilestone.id);
+    } else {
+      // Find the most recently dragged milestone by drag order
+      const recentlyDragged = sortedMilestones.filter(m => m.dragOrder);
+      if (recentlyDragged.length > 0) {
+        priorityMilestone = recentlyDragged.sort((a, b) => b.dragOrder - a.dragOrder)[0];
       }
+    }
+    
+    if (priorityMilestone) {
+      finalPositions.push({ 
+        milestone: priorityMilestone, 
+        x: priorityMilestone.x, 
+        y: this.getHillY(priorityMilestone.x) 
+      });
     }
 
     // Second: Position all other milestones, stacking them if they overlap
     sortedMilestones.forEach((milestone) => {
-      const isDraggedMilestone = this.draggedMilestone && this.draggedMilestone.id === milestone.id;
+      const isPriorityMilestone = priorityMilestone && priorityMilestone.id === milestone.id;
       
-      if (!isDraggedMilestone) {
+      if (!isPriorityMilestone) {
         let adjustedX = milestone.x;
         let adjustedY = this.getHillY(adjustedX);
         
@@ -322,6 +331,11 @@ class HillChartGenerator {
         isDragging = false;
         this.draggedMilestone = null;
         milestoneGroup.classList.remove("dragging");
+        
+        // Give the just-dragged milestone priority by updating its drag order
+        this.dragOrder++;
+        milestone.dragOrder = this.dragOrder;
+        
         // Full render when drag is complete to handle stacking
         this.render();
         this.saveMilestones();
