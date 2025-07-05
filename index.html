@@ -21,6 +21,12 @@
       <div class="controls">
         <input
           type="text"
+          id="titleInput"
+          placeholder="Enter chart title"
+          class="title-input"
+        />
+        <input
+          type="text"
           id="milestoneInput"
           placeholder="Enter production goal"
         />
@@ -48,6 +54,10 @@
             fill="url(#hillGradient)"
           />
 
+          <g class="chart-title">
+            <text x="120" y="100" text-anchor="start" class="title-text" id="chartTitle">Chart Title</text>
+          </g>
+          
           <g class="hill-labels">
             <text x="475" y="550" text-anchor="middle" class="phase-label">
               Problem Analysis

@@ -1,11 +1,13 @@
 class HillChartGenerator {
   constructor() {
     this.svg = document.getElementById("hillChart");
+    this.titleInput = document.getElementById("titleInput");
     this.milestoneInput = document.getElementById("milestoneInput");
     this.addMilestoneBtn = document.getElementById("addMilestone");
     this.downloadBtn = document.getElementById("downloadBtn");
     this.clearBtn = document.getElementById("clearBtn");
     this.milestoneList = document.getElementById("milestoneList");
+    this.chartTitle = document.getElementById("chartTitle");
 
     this.milestones = [];
     this.draggedMilestone = null;
@@ -24,6 +26,7 @@ class HillChartGenerator {
     this.drawHillCurve();
     this.bindEvents();
     this.loadMilestones();
+    this.loadTitle();
   }
 
   drawHillCurve() {
@@ -70,6 +73,7 @@ class HillChartGenerator {
     this.milestoneInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") this.addMilestone();
     });
+    this.titleInput.addEventListener("input", (e) => this.updateTitle(e.target.value));
     this.downloadBtn.addEventListener("click", () => this.downloadImage());
     this.clearBtn.addEventListener("click", () => this.clearAll());
   }
@@ -406,6 +410,23 @@ class HillChartGenerator {
     URL.revokeObjectURL(url);
   }
 
+
+  updateTitle(title) {
+    this.chartTitle.textContent = title || "Chart Title";
+    this.saveTitle(title);
+  }
+
+  saveTitle(title) {
+    localStorage.setItem("hillChartTitle", title);
+  }
+
+  loadTitle() {
+    const saved = localStorage.getItem("hillChartTitle");
+    if (saved) {
+      this.titleInput.value = saved;
+      this.chartTitle.textContent = saved;
+    }
+  }
 
   clearAll() {
     if (
