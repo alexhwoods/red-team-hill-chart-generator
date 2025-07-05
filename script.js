@@ -8,6 +8,7 @@ class HillChartGenerator {
     this.clearBtn = document.getElementById("clearBtn");
     this.milestoneList = document.getElementById("milestoneList");
     this.chartTitle = document.getElementById("chartTitle");
+    this.chartDate = document.getElementById("chartDate");
 
     this.milestones = [];
     this.draggedMilestone = null;
@@ -27,6 +28,7 @@ class HillChartGenerator {
     this.bindEvents();
     this.loadMilestones();
     this.loadTitle();
+    this.setTodaysDate();
   }
 
   drawHillCurve() {
@@ -189,7 +191,7 @@ class HillChartGenerator {
           const verticalDistance = Math.abs(adjustedY - pos.y);
           
           // Check if dots are close enough horizontally to consider stacking
-          const horizontalThreshold = dotRadius * 3; // Allow some horizontal proximity
+          const horizontalThreshold = 10 * dotRadius;
           
           // If horizontally close, then check vertical overlap
           // Allow 25% vertical overlap before stacking
@@ -447,6 +449,17 @@ class HillChartGenerator {
     }
   }
 
+  setTodaysDate() {
+    const today = new Date();
+    const options = { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    const dateString = today.toLocaleDateString('en-US', options);
+    this.chartDate.textContent = dateString;
+  }
+
   clearAll() {
     if (
       confirm(
@@ -520,7 +533,7 @@ class HillChartGenerator {
         for (const pos of finalPositions) {
           const horizontalDistance = Math.abs(adjustedX - pos.x);
           const verticalDistance = Math.abs(adjustedY - pos.y);
-          const horizontalThreshold = dotRadius * 3;
+          const horizontalThreshold = 10 * dotRadius;
           const allowedVerticalOverlap = dotRadius * 2 * 0.75;
           const wouldOverlap = horizontalDistance < horizontalThreshold && verticalDistance < allowedVerticalOverlap;
           

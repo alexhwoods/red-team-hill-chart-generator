@@ -150,6 +150,14 @@ button:hover {
     font-family: 'Comic Sans MS', cursive;
 }
 
+.date-text {
+    font-size: 12px;
+    font-weight: normal;
+    fill: #8b0000;
+    font-family: 'Comic Sans MS', cursive;
+    opacity: 0.8;
+}
+
 .center-guide-line {
     stroke: #cc0000;
     stroke-width: 1;
