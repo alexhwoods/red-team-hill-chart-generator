@@ -135,7 +135,7 @@ button:hover {
   padding: 3px;
   margin: 0;
   border-radius: 8px;
-  background: transparent;
+  background: linear-gradient(135deg, #fffacd 0%, #f0e68c 100%);
 }
 
 #hillChart {
