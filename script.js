@@ -163,7 +163,9 @@ class HillChartGenerator {
           const verticalDistance = Math.abs(adjustedY - pos.y);
           
           // Check if dots would actually overlap (considering both X and Y positions)
-          const wouldOverlap = horizontalDistance < (dotRadius * 2) && verticalDistance < (dotRadius * 2);
+          // Allow 25% vertical overlap before stacking
+          const allowedVerticalOverlap = dotRadius * 2 * 0.75; // 75% of full diameter = 25% overlap allowed
+          const wouldOverlap = horizontalDistance < (dotRadius * 2) && verticalDistance < allowedVerticalOverlap;
           
           if (wouldOverlap) {
             stackLevel++;
