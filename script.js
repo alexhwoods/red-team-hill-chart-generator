@@ -227,6 +227,8 @@ class HillChartGenerator {
               }
               // The priority milestone should snap to the non-priority milestone's position
               priorityX = this.alignmentPositions.get(alignmentKey);
+              // IMPORTANT: Update the actual milestone object so other milestones see the aligned position
+              priorityMilestone.x = priorityX;
               break;
             } else {
               // Remove alignment if dragged too far
@@ -277,16 +279,35 @@ class HillChartGenerator {
               }
               adjustedX = this.alignmentPositions.get(alignmentKey);
               
-              // Also update the priority milestone position if it's involved in this alignment
-              if (pos.milestone.id === priorityMilestone?.id) {
-                pos.x = adjustedX;
-                pos.y = this.getHillY(adjustedX); // Update Y position to move up immediately
-              }
+              // Don't modify existing positions in finalPositions to avoid interfering with other stacks
             }
             
             // Apply stacking using the aligned position
             stackLevel++;
             adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
+          }
+        }
+        
+        // Apply existing alignment if this milestone has one (for maintaining existing stacks)
+        if (stackLevel === 0) {
+          for (const pos of finalPositions) {
+            const alignmentKey = `${Math.min(milestone.id, pos.milestone.id)}-${Math.max(milestone.id, pos.milestone.id)}`;
+            if (this.alignmentPositions && this.alignmentPositions.has(alignmentKey)) {
+              // Check if alignment should still be maintained
+              const horizontalDistance = Math.abs(milestone.x - pos.milestone.x);
+              const verticalDistance = Math.abs(this.getHillY(milestone.x) - this.getHillY(pos.milestone.x));
+              const horizontalThreshold = 10 * dotRadius;
+              const allowedVerticalOverlap = dotRadius * 2 * 0.75;
+              
+              const stillClose = horizontalDistance < horizontalThreshold && verticalDistance < allowedVerticalOverlap;
+              
+              if (stillClose) {
+                adjustedX = this.alignmentPositions.get(alignmentKey);
+                stackLevel = 1; // Force stacking for aligned milestones
+                adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
+                break;
+              }
+            }
           }
         }
         
