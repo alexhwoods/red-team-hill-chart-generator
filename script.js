@@ -290,12 +290,22 @@ class HillChartGenerator {
           }
         }
         
-        // Clean up old alignments if no overlap detected
+        // Clean up old alignments only if this specific milestone is no longer overlapping
         if (stackLevel === 0) {
           for (const pos of finalPositions) {
             const alignmentKey = `${Math.min(milestone.id, pos.milestone.id)}-${Math.max(milestone.id, pos.milestone.id)}`;
             if (this.alignmentPositions && this.alignmentPositions.has(alignmentKey)) {
-              this.alignmentPositions.delete(alignmentKey);
+              // Only delete if the milestone positions are actually far apart
+              const horizontalDistance = Math.abs(milestone.x - pos.milestone.x);
+              const verticalDistance = Math.abs(this.getHillY(milestone.x) - this.getHillY(pos.milestone.x));
+              const horizontalThreshold = 10 * dotRadius;
+              const allowedVerticalOverlap = dotRadius * 2 * 0.75;
+              
+              const stillClose = horizontalDistance < horizontalThreshold && verticalDistance < allowedVerticalOverlap;
+              
+              if (!stillClose) {
+                this.alignmentPositions.delete(alignmentKey);
+              }
             }
           }
         }
