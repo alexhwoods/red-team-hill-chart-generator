@@ -252,64 +252,49 @@ class HillChartGenerator {
         let adjustedX = milestone.x;
         let adjustedY = this.getHillY(adjustedX);
 
-        // First, check for existing alignment and apply it immediately
-        let alignmentTarget = null;
-        for (const pos of finalPositions) {
-          const alignmentKey = `${Math.min(milestone.id, pos.milestone.id)}-${Math.max(milestone.id, pos.milestone.id)}`;
-          
-          if (this.alignmentPositions && this.alignmentPositions.has(alignmentKey)) {
-            // Check if this milestone should still be aligned
-            const horizontalDistance = Math.abs(milestone.x - pos.milestone.x);
-            const verticalDistance = Math.abs(this.getHillY(milestone.x) - this.getHillY(pos.milestone.x));
-            const horizontalThreshold = 10 * dotRadius;
-            const allowedVerticalOverlap = dotRadius * 2 * 0.75;
-            
-            const wouldOverlap = horizontalDistance < horizontalThreshold && verticalDistance < allowedVerticalOverlap;
-            
-            if (wouldOverlap) {
-              // Apply alignment immediately
-              adjustedX = this.alignmentPositions.get(alignmentKey);
-              adjustedY = this.getHillY(adjustedX);
-              alignmentTarget = pos;
-              break;
-            } else {
-              // Remove alignment if no longer close
-              this.alignmentPositions.delete(alignmentKey);
-            }
-          }
-        }
-
-        // Now check for stacking with the potentially aligned position
+        // Check for overlap using original positions and apply both alignment and stacking simultaneously
         let stackLevel = 0;
+        let alignmentTarget = null;
+        
         for (const pos of finalPositions) {
-          const horizontalDistance = Math.abs(adjustedX - pos.x);
-          const verticalDistance = Math.abs(adjustedY - pos.y);
-
-          // Check if dots are close enough horizontally to consider stacking
+          // Use original milestone positions for consistent overlap detection
+          const horizontalDistance = Math.abs(milestone.x - pos.milestone.x);
+          const verticalDistance = Math.abs(this.getHillY(milestone.x) - this.getHillY(pos.milestone.x));
           const horizontalThreshold = 10 * dotRadius;
-
-          // If horizontally close, then check vertical overlap
-          // Allow 25% vertical overlap before stacking
-          const allowedVerticalOverlap = dotRadius * 2 * 0.75; // 75% of full diameter = 25% overlap allowed
-          const wouldOverlap =
-            horizontalDistance < horizontalThreshold &&
-            verticalDistance < allowedVerticalOverlap;
+          const allowedVerticalOverlap = dotRadius * 2 * 0.75;
+          
+          const wouldOverlap = horizontalDistance < horizontalThreshold && verticalDistance < allowedVerticalOverlap;
 
           if (wouldOverlap) {
-            stackLevel++;
-            adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
-            
-            // Set alignment target for new alignments
+            // Apply alignment first (before stacking calculation)
             if (!alignmentTarget) {
               alignmentTarget = pos;
-              
-              // Store new alignment
               const alignmentKey = `${Math.min(milestone.id, pos.milestone.id)}-${Math.max(milestone.id, pos.milestone.id)}`;
+              
               if (!this.alignmentPositions.has(alignmentKey)) {
                 const nonPriorityX = pos.milestone.id === priorityMilestone?.id ? milestone.x : pos.milestone.x;
                 this.alignmentPositions.set(alignmentKey, nonPriorityX);
-                adjustedX = nonPriorityX;
               }
+              adjustedX = this.alignmentPositions.get(alignmentKey);
+              
+              // Also update the priority milestone position if it's involved in this alignment
+              if (pos.milestone.id === priorityMilestone?.id) {
+                pos.x = adjustedX;
+              }
+            }
+            
+            // Apply stacking using the aligned position
+            stackLevel++;
+            adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
+          }
+        }
+        
+        // Clean up old alignments if no overlap detected
+        if (stackLevel === 0) {
+          for (const pos of finalPositions) {
+            const alignmentKey = `${Math.min(milestone.id, pos.milestone.id)}-${Math.max(milestone.id, pos.milestone.id)}`;
+            if (this.alignmentPositions && this.alignmentPositions.has(alignmentKey)) {
+              this.alignmentPositions.delete(alignmentKey);
             }
           }
         }
