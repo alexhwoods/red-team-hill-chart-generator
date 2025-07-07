@@ -206,25 +206,27 @@ class HillChartGenerator {
     if (priorityMilestone) {
       let priorityX = priorityMilestone.x;
       
-      // Check if priority milestone should be aligned with any other milestone
+      // Check if priority milestone should stick to any existing alignment
       for (const otherMilestone of sortedMilestones) {
         if (otherMilestone.id !== priorityMilestone.id) {
           const alignmentKey = `${Math.min(priorityMilestone.id, otherMilestone.id)}-${Math.max(priorityMilestone.id, otherMilestone.id)}`;
-          const horizontalDistance = Math.abs(priorityX - otherMilestone.x);
-          const alignmentThreshold = 15;
           
-          if (horizontalDistance <= alignmentThreshold) {
-            // Store or retrieve the alignment position
-            if (!this.alignmentPositions.has(alignmentKey)) {
-              const midpointX = (priorityX + otherMilestone.x) / 2;
-              this.alignmentPositions.set(alignmentKey, midpointX);
+          if (this.alignmentPositions && this.alignmentPositions.has(alignmentKey)) {
+            const horizontalDistance = Math.abs(priorityMilestone.x - otherMilestone.x);
+            const verticalDistance = Math.abs(this.getHillY(priorityMilestone.x) - this.getHillY(otherMilestone.x));
+            const horizontalThreshold = 10 * dotRadius;
+            const allowedVerticalOverlap = dotRadius * 2 * 0.75;
+            
+            const wouldOverlap = horizontalDistance < horizontalThreshold && verticalDistance < allowedVerticalOverlap;
+            
+            if (wouldOverlap) {
+              // The priority milestone should snap to the other milestone's position for stickiness
+              priorityX = otherMilestone.x;
+              break;
+            } else {
+              // Remove alignment if dragged too far
+              this.alignmentPositions.delete(alignmentKey);
             }
-            // Use the stored alignment position
-            priorityX = this.alignmentPositions.get(alignmentKey);
-            break; // Only align with the first qualifying milestone
-          } else {
-            // Remove alignment if milestones are no longer close
-            this.alignmentPositions.delete(alignmentKey);
           }
         }
       }
@@ -275,24 +277,24 @@ class HillChartGenerator {
 
         // Apply alignment stickiness if vertical adjustment occurred
         if (stackLevel > 0 && alignmentTarget) {
-          const alignmentThreshold = 15; // pixels within which to snap for alignment
           const alignmentKey = `${Math.min(milestone.id, alignmentTarget.milestone.id)}-${Math.max(milestone.id, alignmentTarget.milestone.id)}`;
           
-          // Check if this milestone is close enough to align with the target
-          const horizontalDistance = Math.abs(adjustedX - alignmentTarget.x);
+          // Check if this milestone is close enough to align with the target using both horizontal and vertical overlap
+          const horizontalDistance = Math.abs(milestone.x - alignmentTarget.milestone.x);
+          const verticalDistance = Math.abs(this.getHillY(milestone.x) - this.getHillY(alignmentTarget.milestone.x));
+          const horizontalThreshold = 10 * dotRadius;
+          const allowedVerticalOverlap = dotRadius * 2 * 0.75;
           
-          if (horizontalDistance <= alignmentThreshold) {
-            // Store or retrieve the alignment position
+          const wouldOverlap = horizontalDistance < horizontalThreshold && verticalDistance < allowedVerticalOverlap;
+          
+          if (wouldOverlap) {
+            // Store the existing milestone's original position as the alignment point
             if (!this.alignmentPositions.has(alignmentKey)) {
-              // First time aligning - store the midpoint
-              const midpointX = (adjustedX + alignmentTarget.x) / 2;
-              this.alignmentPositions.set(alignmentKey, midpointX);
+              this.alignmentPositions.set(alignmentKey, alignmentTarget.milestone.x);
             }
-            // Use the stored alignment position
+            
+            // Use the stored alignment position (fixed anchor point)
             adjustedX = this.alignmentPositions.get(alignmentKey);
-          } else {
-            // Remove alignment if milestones are no longer close
-            this.alignmentPositions.delete(alignmentKey);
           }
         }
 
