@@ -220,8 +220,13 @@ class HillChartGenerator {
             const wouldOverlap = horizontalDistance < horizontalThreshold && verticalDistance < allowedVerticalOverlap;
             
             if (wouldOverlap) {
-              // The priority milestone should snap to the other milestone's position for stickiness
-              priorityX = otherMilestone.x;
+              // Store the non-priority milestone's position if not already stored
+              // The otherMilestone is the one NOT being dragged, so use its position
+              if (!this.alignmentPositions.has(alignmentKey)) {
+                this.alignmentPositions.set(alignmentKey, otherMilestone.x);
+              }
+              // The priority milestone should snap to the non-priority milestone's position
+              priorityX = this.alignmentPositions.get(alignmentKey);
               break;
             } else {
               // Remove alignment if dragged too far
@@ -288,9 +293,11 @@ class HillChartGenerator {
           const wouldOverlap = horizontalDistance < horizontalThreshold && verticalDistance < allowedVerticalOverlap;
           
           if (wouldOverlap) {
-            // Store the existing milestone's original position as the alignment point
+            // Store the non-priority milestone's position as the alignment point
             if (!this.alignmentPositions.has(alignmentKey)) {
-              this.alignmentPositions.set(alignmentKey, alignmentTarget.milestone.x);
+              // Find which milestone is NOT the priority milestone
+              const nonPriorityX = alignmentTarget.milestone.id === priorityMilestone?.id ? milestone.x : alignmentTarget.milestone.x;
+              this.alignmentPositions.set(alignmentKey, nonPriorityX);
             }
             
             // Use the stored alignment position (fixed anchor point)
