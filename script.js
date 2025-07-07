@@ -179,6 +179,11 @@ class HillChartGenerator {
     const dotRadius = 10; // radius of milestone dots
     const stackOffset = 30; // pixels to stack overlapping milestones vertically
     const finalPositions = [];
+    
+    // Initialize alignment positions if not already set
+    if (!this.alignmentPositions) {
+      this.alignmentPositions = new Map();
+    }
 
     // First: Position the currently dragged milestone OR recently dragged milestone on the hill curve
     let priorityMilestone = null;
@@ -199,10 +204,35 @@ class HillChartGenerator {
     }
 
     if (priorityMilestone) {
+      let priorityX = priorityMilestone.x;
+      
+      // Check if priority milestone should be aligned with any other milestone
+      for (const otherMilestone of sortedMilestones) {
+        if (otherMilestone.id !== priorityMilestone.id) {
+          const alignmentKey = `${Math.min(priorityMilestone.id, otherMilestone.id)}-${Math.max(priorityMilestone.id, otherMilestone.id)}`;
+          const horizontalDistance = Math.abs(priorityX - otherMilestone.x);
+          const alignmentThreshold = 15;
+          
+          if (horizontalDistance <= alignmentThreshold) {
+            // Store or retrieve the alignment position
+            if (!this.alignmentPositions.has(alignmentKey)) {
+              const midpointX = (priorityX + otherMilestone.x) / 2;
+              this.alignmentPositions.set(alignmentKey, midpointX);
+            }
+            // Use the stored alignment position
+            priorityX = this.alignmentPositions.get(alignmentKey);
+            break; // Only align with the first qualifying milestone
+          } else {
+            // Remove alignment if milestones are no longer close
+            this.alignmentPositions.delete(alignmentKey);
+          }
+        }
+      }
+      
       finalPositions.push({
         milestone: priorityMilestone,
-        x: priorityMilestone.x,
-        y: this.getHillY(priorityMilestone.x),
+        x: priorityX,
+        y: this.getHillY(priorityX),
       });
     }
 
@@ -217,6 +247,7 @@ class HillChartGenerator {
 
         // Check if this milestone would visually overlap with any already positioned milestone
         let stackLevel = 0;
+        let alignmentTarget = null;
         for (const pos of finalPositions) {
           const horizontalDistance = Math.abs(adjustedX - pos.x);
           const verticalDistance = Math.abs(adjustedY - pos.y);
@@ -234,6 +265,34 @@ class HillChartGenerator {
           if (wouldOverlap) {
             stackLevel++;
             adjustedY = this.getHillY(adjustedX) - stackLevel * stackOffset;
+            
+            // Set alignment target for stickiness
+            if (!alignmentTarget) {
+              alignmentTarget = pos;
+            }
+          }
+        }
+
+        // Apply alignment stickiness if vertical adjustment occurred
+        if (stackLevel > 0 && alignmentTarget) {
+          const alignmentThreshold = 15; // pixels within which to snap for alignment
+          const alignmentKey = `${Math.min(milestone.id, alignmentTarget.milestone.id)}-${Math.max(milestone.id, alignmentTarget.milestone.id)}`;
+          
+          // Check if this milestone is close enough to align with the target
+          const horizontalDistance = Math.abs(adjustedX - alignmentTarget.x);
+          
+          if (horizontalDistance <= alignmentThreshold) {
+            // Store or retrieve the alignment position
+            if (!this.alignmentPositions.has(alignmentKey)) {
+              // First time aligning - store the midpoint
+              const midpointX = (adjustedX + alignmentTarget.x) / 2;
+              this.alignmentPositions.set(alignmentKey, midpointX);
+            }
+            // Use the stored alignment position
+            adjustedX = this.alignmentPositions.get(alignmentKey);
+          } else {
+            // Remove alignment if milestones are no longer close
+            this.alignmentPositions.delete(alignmentKey);
           }
         }
 
