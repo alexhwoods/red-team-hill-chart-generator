@@ -280,6 +280,7 @@ class HillChartGenerator {
               // Also update the priority milestone position if it's involved in this alignment
               if (pos.milestone.id === priorityMilestone?.id) {
                 pos.x = adjustedX;
+                pos.y = this.getHillY(adjustedX); // Update Y position to move up immediately
               }
             }
             
